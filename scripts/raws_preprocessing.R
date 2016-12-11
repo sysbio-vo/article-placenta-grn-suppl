@@ -53,9 +53,9 @@ pl <- pcaPlots(pca, pdata, c("Condition", "Sentrix_ID"), studies[i,]$ID)
 pl.nobatch <- pcaPlots(pca.nobatch, pdata, c("Condition", "Sentrix_ID"), studies[i,]$ID)
 
 ## Save plot for manual quality control
-save_plot(paste("../plots/", studies[i,]$ID, "_preliminary_PCA.pdf", sep=""),
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_preliminary_PCA.pdf", sep=""),
           base_height=4, base_aspect_ratio = 2.6, pl)
-save_plot(paste("../plots/", studies[i,]$ID, "_preliminary_PCA_nobatch.pdf", sep=""),
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_preliminary_PCA_nobatch.pdf", sep=""),
           base_height=4, base_aspect_ratio = 2.6, pl.nobatch)
 
 ### Manual QC step
@@ -68,7 +68,7 @@ save_plot(paste("../plots/", studies[i,]$ID, "_preliminary_PCA_nobatch.pdf", sep
 ## We use only one dataset, original or nobatch, decided during manual step
 eset = ExpressionSet(assayData=N.exprs.nobatch, phenoData = AnnotatedDataFrame(pdata))
 arrayQualityMetrics(expressionset = eset,
-                   outdir = paste("../plots/AQM_report_nobatch_", studies[i,]$ID, sep=""),
+                   outdir = paste("../plots/AQM/AQM_report_nobatch_", studies[i,]$ID, sep=""),
                    force = TRUE,
                    do.logtransform = FALSE,
                    intgroup = c("Condition"))
@@ -82,10 +82,15 @@ pdata <- pdata[-exl,]
 N.exprs.nobatch <- N.exprs.nobatch[,-exl]
 eset = ExpressionSet(assayData=N.exprs.nobatch, phenoData = AnnotatedDataFrame(pdata))
 arrayQualityMetrics(expressionset = eset,
-                    outdir = paste("../plots/AQM_report_nobatch_nooutliers_N_", studies[i,]$ID, sep=""),
+                    outdir = paste("../plots/AQM/AQM_report_nobatch_nooutliers_", studies[i,]$ID, sep=""),
                     force = TRUE,
                     do.logtransform = FALSE,
                     intgroup = c("Condition"))
+## Final PCA plot
+pca.final = prcomp(t(N.exprs.nobatch))
+pl.final <- pcaPlots(pca.final, pdata, c("Condition", "Sentrix_ID"), studies[i,]$ID)
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_final_PCA.pdf", sep=""),
+          base_height=4, base_aspect_ratio = 2.6, pl.final)
 
 ### If the result is satisfying save the expression data for futher analysis
 
