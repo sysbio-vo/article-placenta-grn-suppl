@@ -22,8 +22,16 @@ idatfiles = dir(path, pattern="idat", full.name=TRUE)
 
 raw.data <- readIdatFiles(idatfiles)
 raw.data@phenoData = AnnotatedDataFrame(pdata)
-N.data <- normaliseIllumina(channel(raw.data, "Green"), method="neqc", transform="none")
-
+#N.data <- normaliseIllumina(channel(raw.data, "Green"), method="neqc", transform="none")
+N.data <- normaliseIllumina(channel(raw.data, "Green"), method="quantile", transform="log2")
+## In case of quantile do the following
+exprs <- exprs(N.data)
+# Remove all rows with non-finite values
+exprs <- exprs[!rowSums(!is.finite(exprs)),]
+# Replace all non-finite values with 0
+exprs[!is.finite(exprs)] <- 0
+# Change back
+N.data@assayData$exprs <- exprs
 
 ### Processing
 
@@ -33,6 +41,15 @@ mod = model.matrix(~as.factor(Condition), data=pData(N.data))
 combat_edata = ComBat(dat=exprs(N.data), batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
 N.data.nobatch <- N.data
 N.data.nobatch@assayData$exprs <- combat_edata
+
+## In case of quantile do the following
+exprs <- exprs(N.data.nobatch)
+# Remove all rows with non-finite values
+exprs <- exprs[!rowSums(!is.finite(exprs)),]
+# Replace all non-finite values with 0
+exprs[!is.finite(exprs)] <- 0
+# Change back
+N.data.nobatch@assayData$exprs <- exprs
 
 ## Extract expression data
 N.exprs <- exprs(N.data)
