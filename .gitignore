@@ -1,4 +1,4 @@
 raws/
 plots/
 exprs/
-scripts/.Rhistory
+*.Rhistory
