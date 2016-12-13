@@ -52,12 +52,22 @@ exprs.unique <-collapsed$datETcollapsed
 
 ## Find degs using linear models
 design = model.matrix(~as.factor(Condition), data=pdata)
-colnames(design) <- c("Intercept", "LOWvsHIGH")
+colnames(design) <- c("HIGH", "LOWvsHIGH")
 fit <- lmFit(exprs.unique, design)
 fit <- eBayes(fit)
 degs <- topTable(fit, coef="LOWvsHIGH", adjust.method="fdr", number=nrow(fit))
 
-## Filter by adj.P.Val
-degs <- degs[degs$adj.P.Val<0.05,]
+## Merge DEGs with expression matrix
+exprs.degs <- merge(exprs.unique, degs, by="row.names")
+colnames(exprs.degs)[1] <- "ENTREZID"
+EntrezID_Symbol<-select(org.Hs.eg.db, exprs.degs$ENTREZID, "SYMBOL")
+exprs.degs <- cbind(EntrezID_Symbol, exprs.degs)
+exprs.degs <- exprs.degs[,-3]
 
+write.table(exprs.degs, paste("../degs/", studies[i,]$ID, "_exprs_degs.tsv", sep=""), sep="\t",
+            row.names = FALSE, quote=FALSE)
 
+## Order by P.Value
+exprs.degs <- exprs.degs[exprs.degs$P.Value < 0.05,]
+exprs.degs <- exprs.degs[order(abs(exprs.degs$logFC)),]
+exprs.degs <- exprs.degs[abs(exprs.degs$logFC) > 0.7,]
