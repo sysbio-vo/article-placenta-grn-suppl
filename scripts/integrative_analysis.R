@@ -2,7 +2,9 @@ library(illuminaHumanv3.db)
 library(WGCNA)
 library(limma)
 library(sva)
+library(arrayQualityMetrics)
 source("pcaPlots.R")
+library(beadarray)
 
 ### General variables
 
@@ -34,7 +36,7 @@ exprs <- exprs[,-exl]
 ### Remove batch caused by two different studies
 
 batch = as.factor(pdata$Study_ID)
-mod = model.matrix(~as.factor(Trimester), data=pdata)
+mod = model.matrix(~as.factor(Condition), data=pdata)
 combat_edata = ComBat(dat=exprs, batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
 exprs.nobatch <- combat_edata
 
@@ -45,6 +47,14 @@ pca = prcomp(t(exprs.nobatch))
 pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID"), "Integrated data")
 save_plot("../plots/PCA/integrated_PCA_nobatch.pdf",
           base_height=4, base_aspect_ratio = 3.5, pl)
+
+eset = ExpressionSet(assayData=as.matrix(exprs.nobatch), phenoData = AnnotatedDataFrame(pdata))
+arrayQualityMetrics(expressionset = eset,
+                    outdir = "../plots/AQM/AQM_report_nobatch_integrated",
+                    force = TRUE,
+                    do.logtransform = FALSE,
+                    intgroup = c("Condition"))
+
 
 ## Separate datasets
 # London
