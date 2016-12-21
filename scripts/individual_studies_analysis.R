@@ -7,8 +7,8 @@ library(limma)
 studies <- read.table("../pdata/studies.tsv", header = TRUE, sep = "\t")
 
 ## Choose between cohorts
-i = which(studies$ID=="london")
-#i = which(studies$ID=="oslo")
+#i = which(studies$ID=="london")
+i = which(studies$ID=="oslo")
 
 pdata <- read.table(paste("../pdata/", studies[i,]$ID, "_pdata.tsv", sep=""), 
                    sep="\t", head=TRUE, stringsAsFactors = FALSE)
@@ -52,10 +52,19 @@ exprs.unique <-collapsed$datETcollapsed
 
 ## Find degs using linear models
 design = model.matrix(~as.factor(Condition), data=pdata)
-colnames(design) <- c("HIGH", "LOWvsHIGH")
+if (studies[i,]$ID=="london") {
+  colnames(design) <- c("HIGH", "LOWvsHIGH")
+} else {
+  colnames(design) <- c("Control", "PreeclampsiavsControl")
+}
+
 fit <- lmFit(exprs.unique, design)
 fit <- eBayes(fit)
-degs <- topTable(fit, coef="LOWvsHIGH", adjust.method="fdr", number=nrow(fit))
+if (studies[i,]$ID=="london") {
+  degs <- topTable(fit, coef="LOWvsHIGH", adjust.method="fdr", number=nrow(fit))
+} else {
+  degs <- topTable(fit, coef="PreeclampsiavsControl", adjust.method="fdr", number=nrow(fit))
+}
 
 ## Merge DEGs with expression matrix
 exprs.degs <- merge(exprs.unique, degs, by="row.names")
@@ -64,10 +73,10 @@ EntrezID_Symbol<-select(org.Hs.eg.db, exprs.degs$ENTREZID, "SYMBOL")
 exprs.degs <- cbind(EntrezID_Symbol, exprs.degs)
 exprs.degs <- exprs.degs[,-3]
 
-write.table(exprs.degs, paste("../degs/", studies[i,]$ID, "_exprs_degs.tsv", sep=""), sep="\t",
+write.table(exprs.degs, paste("../degs/", studies[i,]$ID, "_exprs_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
 ## Order by P.Value
-exprs.degs <- exprs.degs[exprs.degs$P.Value < 0.05,]
+exprs.degs <- exprs.degs[exprs.degs$adj.P.Val < 0.05,]
 exprs.degs <- exprs.degs[order(abs(exprs.degs$logFC)),]
 exprs.degs <- exprs.degs[abs(exprs.degs$logFC) > 0.7,]
