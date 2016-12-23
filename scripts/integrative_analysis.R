@@ -44,9 +44,9 @@ exprs.nobatch <- combat_edata
 
 ## Integrated dataset
 pca = prcomp(t(exprs.nobatch))
-pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID"), "Integrated data")
+pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
 save_plot("../plots/PCA/integrated_PCA_nobatch.pdf",
-          base_height=4, base_aspect_ratio = 3.5, pl)
+          base_height=5.5, base_aspect_ratio = 1.6, pl)
 
 eset = ExpressionSet(assayData=as.matrix(exprs.nobatch), phenoData = AnnotatedDataFrame(pdata))
 arrayQualityMetrics(expressionset = eset,
@@ -75,6 +75,7 @@ save_plot("../plots/PCA/oslo_integrated_PCA_nobatch.pdf",
 
 ### Getting probe to gene unique correspondence
 
+exprs <- exprs.nobatch
 ## Get probeset to entrezid mapping
 probesetsID <- rownames(exprs)
 probesetsID_EntrezID<-select(get(paste(studies[i,]$platformAbbr, ".db", sep="")), probesetsID, "ENTREZID")
@@ -93,3 +94,20 @@ exprs <- exprs[which(rownames(exprs) %in% probesetsID_EntrezID$PROBEID),]
 # Select one probeset among the probesets mapped to the same gene based on maximum average value across the samples
 collapsed = collapseRows(exprs, probesetsID_EntrezID$ENTREZID, probesetsID_EntrezID$PROBEID, method="MaxMean")  
 exprs.unique <-collapsed$datETcollapsed
+
+## Check if probesets elimintation distorted PCA plot (didn't change much)
+pca = prcomp(t(exprs.unique))
+pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
+save_plot("../plots/PCA/integrated_PCA_nobatch_unique_probesets.pdf",
+          base_height=5.5, base_aspect_ratio = 1.6, pl)
+
+### Differentially expressed genes
+
+## Find degs using linear models
+
+# High vs Preeclampsia
+#design = model.matrix(~as.factor(Condition), data=pdata)
+
+# Low vs Preeclampsia
+
+# High vs Control
