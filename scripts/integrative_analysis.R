@@ -154,3 +154,21 @@ write.table(degs, paste("../degs/CP_degs.tsv", sep=""), sep="\t",
 degs <- filterDEGS(degs, 0.05, 0.7)
 write.table(degs, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
+
+# Some comparison
+degs.int <- read.table(paste("../degs/CP_degs_short.tsv", sep=""),
+                           header=TRUE, check.names=FALSE, sep = "\t")
+
+degs.ind <- read.table(paste("../degs/oslo_exprs_degs_short.tsv", sep=""),
+                       header=TRUE, check.names=FALSE, sep = "\t")
+
+common <- intersect(degs.int$SYMBOL, degs.ind$SYMBOL)
+Unique_Gene <- !(degs.int$SYMBOL %in% common)
+degs.int <- cbind(Unique_Gene, degs.int)
+Unique_Gene <- !(degs.ind$SYMBOL %in% common)
+degs.ind <- cbind(Unique_Gene, degs.ind)
+
+write.table(degs.int, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
+            row.names = FALSE, quote=FALSE)
+write.table(degs.ind, paste("../degs/oslo_exprs_degs_short.tsv", sep=""), sep="\t",
+            row.names = FALSE, quote=FALSE)
