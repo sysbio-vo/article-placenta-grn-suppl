@@ -41,9 +41,9 @@ mod = model.matrix(~as.factor(Condition), data=pdata)
 combat_edata = ComBat(dat=exprs, batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
 exprs.nobatch <- combat_edata
 
-if (TEST) {
 ## Check with PCA plot
-
+if (TEST) {
+  
 ## Integrated dataset
 pca = prcomp(t(exprs.nobatch))
 pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
@@ -79,32 +79,13 @@ save_plot("../plots/PCA/oslo_integrated_PCA_nobatch.pdf",
 
 ### Getting probe to gene unique correspondence
 
-exprs <- exprs.nobatch
-## Get probeset to entrezid mapping
-probesetsID <- rownames(exprs)
-probesetsID_EntrezID<-select(get(paste(studies[i,]$platformAbbr, ".db", sep="")), probesetsID, "ENTREZID")
+exprs.unique <- getUniqueProbesets(exprs.nobatch, studies[i,]$platformAbbr)
 
-## Replace probesetsIDs with gene IDs in expression data matrix
-
-# Exclude NA probesets
-probesetsID_EntrezID <- probesetsID_EntrezID[which(probesetsID_EntrezID$ENTREZID!="NA"),]
-# Exclude probesets mapped to different genes simultaneously
-n_occur <- data.frame(table(probesetsID_EntrezID$PROBEID))
-uniques <- n_occur[n_occur$Freq == 1,]$Var1
-probesetsID_EntrezID <- probesetsID_EntrezID[which(probesetsID_EntrezID$PROBEID %in% uniques),]
-# Filter expression matrix based on left probesets
-exprs <- exprs[which(rownames(exprs) %in% probesetsID_EntrezID$PROBEID),]
-
-# Select one probeset among the probesets mapped to the same gene based on maximum average value across the samples
-collapsed = collapseRows(exprs, probesetsID_EntrezID$ENTREZID, probesetsID_EntrezID$PROBEID, method="MaxMean")  
-exprs.unique <- collapsed$datETcollapsed
-
-if (TEST) {
-  
 ## Check if probesets elimintation distorted PCA plot (didn't change much)
-pca = prcomp(t(exprs.unique))
-pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
-save_plot("../plots/PCA/integrated_PCA_nobatch_unique_probesets.pdf",
+if (TEST) {
+  pca = prcomp(t(exprs.unique))
+  pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
+  save_plot("../plots/PCA/integrated_PCA_nobatch_unique_probesets.pdf",
           base_height=5.5, base_aspect_ratio = 1.6, pl)
 }
 
