@@ -1,14 +1,15 @@
 library(illuminaHumanv3.db)
 library(WGCNA)
 library(limma)
+source("degs_utils.R")
 
 ### General variables
-
+TEST = FALSE
 studies <- read.table("../pdata/studies.tsv", header = TRUE, sep = "\t")
 
 ## Choose between cohorts
-#i = which(studies$ID=="london")
-i = which(studies$ID=="oslo")
+i = which(studies$ID=="london")
+#i = which(studies$ID=="oslo")
 
 pdata <- read.table(paste("../pdata/", studies[i,]$ID, "_pdata.tsv", sep=""), 
                    sep="\t", head=TRUE, stringsAsFactors = FALSE)
@@ -29,54 +30,25 @@ if (studies[i,]$ID=="london") {
 
 ### Getting probe to gene unique correspondence
 
-## Get probeset to entrezid mapping
-probesetsID <- rownames(exprs)
-probesetsID_EntrezID<-select(get(paste(studies[i,]$platformAbbr, ".db", sep="")), probesetsID, "ENTREZID")
-
-## Replace probesetsIDs with gene IDs in expression data matrix
-
-# Exclude NA probesets
-probesetsID_EntrezID <- probesetsID_EntrezID[which(probesetsID_EntrezID$ENTREZID!="NA"),]
-# Exclude probesets mapped to different genes simultaneously
-n_occur <- data.frame(table(probesetsID_EntrezID$PROBEID))
-uniques <- n_occur[n_occur$Freq == 1,]$Var1
-probesetsID_EntrezID <- probesetsID_EntrezID[which(probesetsID_EntrezID$PROBEID %in% uniques),]
-# Filter expression matrix based on left probesets
-exprs <- exprs[which(rownames(exprs) %in% probesetsID_EntrezID$PROBEID),]
-
-# Select one probeset among the probesets mapped to the same gene based on maximum average value across the samples
-collapsed = collapseRows(exprs, probesetsID_EntrezID$ENTREZID, probesetsID_EntrezID$PROBEID, method="MaxMean")  
-exprs.unique <-collapsed$datETcollapsed
+exprs.unique <- getUniqueProbesets(exprs, studies[i,]$platformAbbr)
 
 ### Differentially expressed genes
 
-## Find degs using linear models
-design = model.matrix(~as.factor(Condition), data=pdata)
 if (studies[i,]$ID=="london") {
-  colnames(design) <- c("HIGH", "LOWvsHIGH")
+  degs <- getDEGS(c("Low risk", "High risk"), pdata, exprs.unique)
 } else {
-  colnames(design) <- c("Control", "PreeclampsiavsControl")
+  degs <- getDEGS(c("Control", "Preeclampsia"), pdata, exprs.unique)
 }
 
-fit <- lmFit(exprs.unique, design)
-fit <- eBayes(fit)
-if (studies[i,]$ID=="london") {
-  degs <- topTable(fit, coef="LOWvsHIGH", adjust.method="fdr", number=nrow(fit))
-} else {
-  degs <- topTable(fit, coef="PreeclampsiavsControl", adjust.method="fdr", number=nrow(fit))
-}
-
-## Merge DEGs with expression matrix
-exprs.degs <- merge(exprs.unique, degs, by="row.names")
-colnames(exprs.degs)[1] <- "ENTREZID"
-EntrezID_Symbol<-select(org.Hs.eg.db, exprs.degs$ENTREZID, "SYMBOL")
-exprs.degs <- cbind(EntrezID_Symbol, exprs.degs)
-exprs.degs <- exprs.degs[,-3]
-
-write.table(exprs.degs, paste("../degs/", studies[i,]$ID, "_exprs_degs_short.tsv", sep=""), sep="\t",
+write.table(degs, paste("../degs/", studies[i,]$ID, "_exprs_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
-## Order by P.Value
-exprs.degs <- exprs.degs[exprs.degs$adj.P.Val < 0.05,]
-exprs.degs <- exprs.degs[order(abs(exprs.degs$logFC)),]
-exprs.degs <- exprs.degs[abs(exprs.degs$logFC) > 0.7,]
+# Filter by p-value and logFC, write to file short list
+if (studies[i,]$ID=="london") {
+  degs <- filterDEGS(degs, 0.05, 0.7, adj=FALSE)
+} else {
+  degs <- filterDEGS(degs, 0.05, 0.7)
+}
+
+write.table(degs, paste("../degs/", studies[i,]$ID, "_exprs_degs_short.tsv", sep=""), sep="\t",
+            row.names = FALSE, quote=FALSE)

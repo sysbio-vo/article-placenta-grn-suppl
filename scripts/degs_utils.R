@@ -28,9 +28,16 @@ getDEGS <- function(meta.vars, pheno.data, exprs) {
   return(exprs.degs)
 }
 
-filterDEGS <- function(degs, pval, fc) {
+filterDEGS <- function(degs, pval, fc, adj) {
   # Filter by p-values
-  degs <- degs[degs$adj.P.Val < pval,]
+  if (missing(adj)) {
+    degs <- degs[degs$adj.P.Val < pval,]
+  } else if (adj==FALSE) {
+    degs <- degs[degs$P.Value < pval,]
+  } else if (adj==TRUE) {
+    degs <- degs[degs$adj.P.Val < pval,]
+  }
+  
   # Sort by logFC
   degs <- degs[order(abs(degs$logFC)),]
   # Filter by logFC
