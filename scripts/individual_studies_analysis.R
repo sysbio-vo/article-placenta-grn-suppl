@@ -40,7 +40,7 @@ if (studies[i,]$ID=="london") {
   degs <- getDEGS(c("Control", "Preeclampsia"), pdata, exprs.unique)
 }
 
-write.table(degs, paste("../degs/", studies[i,]$ID, "_exprs_degs.tsv", sep=""), sep="\t",
+write.table(degs, paste("../degs/", studies[i,]$ID, "_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
 # Filter by p-value and logFC, write to file short list
@@ -50,5 +50,5 @@ if (studies[i,]$ID=="london") {
   degs <- filterDEGS(degs, 0.05, 0.7)
 }
 
-write.table(degs, paste("../degs/", studies[i,]$ID, "_exprs_degs_short.tsv", sep=""), sep="\t",
+write.table(degs, paste("../degs/", studies[i,]$ID, "_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
