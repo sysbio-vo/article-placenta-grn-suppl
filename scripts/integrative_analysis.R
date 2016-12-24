@@ -4,11 +4,11 @@ library(limma)
 library(sva)
 library(arrayQualityMetrics)
 source("pcaPlots.R")
-source("getDEGS.R")
+source("degs_utils.R")
 library(beadarray)
 
 ### General variables
-
+TEST = FALSE
 studies <- read.table("../pdata/studies.tsv", header = TRUE, sep = "\t")
 
 ## Read from files
@@ -41,6 +41,7 @@ mod = model.matrix(~as.factor(Condition), data=pdata)
 combat_edata = ComBat(dat=exprs, batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
 exprs.nobatch <- combat_edata
 
+if (TEST) {
 ## Check with PCA plot
 
 ## Integrated dataset
@@ -74,6 +75,8 @@ pl <- pcaPlots(pca, pdata[which(pdata$Study_ID=="oslo"),],
 save_plot("../plots/PCA/oslo_integrated_PCA_nobatch.pdf",
           base_height=4, base_aspect_ratio = 2.8, pl)
 
+}
+
 ### Getting probe to gene unique correspondence
 
 exprs <- exprs.nobatch
@@ -96,78 +99,77 @@ exprs <- exprs[which(rownames(exprs) %in% probesetsID_EntrezID$PROBEID),]
 collapsed = collapseRows(exprs, probesetsID_EntrezID$ENTREZID, probesetsID_EntrezID$PROBEID, method="MaxMean")  
 exprs.unique <- collapsed$datETcollapsed
 
+if (TEST) {
+  
 ## Check if probesets elimintation distorted PCA plot (didn't change much)
 pca = prcomp(t(exprs.unique))
 pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
 save_plot("../plots/PCA/integrated_PCA_nobatch_unique_probesets.pdf",
           base_height=5.5, base_aspect_ratio = 1.6, pl)
+}
 
 ### Differentially expressed genes
 
-## Find degs using linear models
+## Preeclampsia versus high and low
 
 # High vs Preeclampsia
-degs <- getDEGS(c("High risk", "Preeclampsia"), pdata, exprs.unique)
-write.table(degs, paste("../degs/HP_degs.tsv", sep=""), sep="\t",
+high.degs <- getDEGS(c("High risk", "Preeclampsia"), pdata, exprs.unique)
+write.table(high.degs, paste("../degs/HP_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
-degs <- degs[degs$adj.P.Val < 0.01,]
-degs <- degs[order(abs(degs$logFC)),]
-degs <- degs[abs(degs$logFC) > 3.5,]
-high.degs <- degs
-write.table(degs, paste("../degs/HP_degs_short.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
+high.degs <- filterDEGS(high.degs, 0.01, 3.5)
 
 # Low vs Preeclampsia
-degs <- getDEGS(c("Low risk", "Preeclampsia"), pdata, exprs.unique)
-write.table(degs, paste("../degs/LP_degs.tsv", sep=""), sep="\t",
+low.degs <- getDEGS(c("Low risk", "Preeclampsia"), pdata, exprs.unique)
+write.table(low.degs, paste("../degs/LP_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
-degs <- degs[degs$adj.P.Val < 0.01,]
-degs <- degs[order(abs(degs$logFC)),]
-degs <- degs[abs(degs$logFC) > 3.5,]
-low.degs <- degs
-write.table(degs, paste("../degs/LP_degs_short.tsv", sep=""), sep="\t",
+low.degs <- filterDEGS(low.degs, 0.01, 3.5)
+
+# Some comparison
+common <- intersect(low.degs$SYMBOL, high.degs$SYMBOL)
+Unique_Gene <- !(low.degs$SYMBOL %in% common)
+low.degs <- cbind(Unique_Gene, low.degs)
+Unique_Gene <- !(high.degs$SYMBOL %in% common)
+high.degs <- cbind(Unique_Gene, high.degs)
+
+write.table(high.degs, paste("../degs/HP_degs_short.tsv", sep=""), sep="\t",
+            row.names = FALSE, quote=FALSE)
+write.table(low.degs, paste("../degs/LP_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
-## Some comparison
-setdiff(low.degs$SYMBOL, high.degs$SYMBOL)
-setdiff(high.degs$SYMBOL, low.degs$SYMBOL)
+## Control versus high and low
 
 # High vs Control
 
-degs <- getDEGS(c("High risk", "Control"), pdata, exprs.unique)
-write.table(degs, paste("../degs/HC_degs.tsv", sep=""), sep="\t",
+high.degs <- getDEGS(c("High risk", "Control"), pdata, exprs.unique)
+write.table(high.degs, paste("../degs/HC_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
-degs <- degs[degs$adj.P.Val < 0.01,]
-degs <- degs[order(abs(degs$logFC)),]
-degs <- degs[abs(degs$logFC) > 3.5,]
-high.degs <- degs
-write.table(degs, paste("../degs/HC_degs_short.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
+high.degs <- filterDEGS(high.degs, 0.01, 3.5)
 
 # Low vs Control
 
-degs <- getDEGS(c("Low risk", "Control"), pdata, exprs.unique)
-write.table(degs, paste("../degs/LC_degs.tsv", sep=""), sep="\t",
+low.degs <- getDEGS(c("Low risk", "Control"), pdata, exprs.unique)
+write.table(low.degs, paste("../degs/LC_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
-degs <- degs[degs$adj.P.Val < 0.01,]
-degs <- degs[order(abs(degs$logFC)),]
-degs <- degs[abs(degs$logFC) > 3.5,]
-low.degs <- degs
-write.table(degs, paste("../degs/LC_degs_short.tsv", sep=""), sep="\t",
+low.degs <- filterDEGS(low.degs, 0.01, 3.5)
+
+# Some comparison
+
+common <- intersect(low.degs$SYMBOL, high.degs$SYMBOL)
+Unique_Gene <- !(low.degs$SYMBOL %in% common)
+low.degs <- cbind(Unique_Gene, low.degs)
+Unique_Gene <- !(high.degs$SYMBOL %in% common)
+high.degs <- cbind(Unique_Gene, high.degs)
+
+write.table(high.degs, paste("../degs/HC_degs_short.tsv", sep=""), sep="\t",
+            row.names = FALSE, quote=FALSE)
+write.table(low.degs, paste("../degs/LC_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
-## Some comparison
-setdiff(low.degs$SYMBOL, high.degs$SYMBOL)
-setdiff(high.degs$SYMBOL, low.degs$SYMBOL)
-
-# Control vs Preeclampsia
+## Control vs Preeclampsia
 
 degs <- getDEGS(c("Control", "Preeclampsia"), pdata, exprs.unique)
 write.table(degs, paste("../degs/CP_degs.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
-degs <- degs[degs$adj.P.Val < 0.05,]
-degs <- degs[order(abs(degs$logFC)),]
-degs <- degs[abs(degs$logFC) > 0.7,]
-cp.degs <- degs
+degs <- filterDEGS(degs, 0.05, 0.7)
 write.table(degs, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)

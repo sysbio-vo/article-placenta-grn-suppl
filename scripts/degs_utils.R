@@ -14,7 +14,7 @@ getDEGS <- function(meta.vars, pheno.data, exprs) {
   fit <- eBayes(fit)
   degs <- topTable(fit, coef=paste(meta.vars[1], "vs", meta.vars[2], sep=""), adjust.method="fdr", number=nrow(fit))
 
-  exprs.degs <- merge(exprs.short, degs, by="row.names")
+  exprs.degs <- merge(degs, exprs.short, by="row.names")
   colnames(exprs.degs)[1] <- "ENTREZID"
   EntrezID_Symbol<-select(org.Hs.eg.db, exprs.degs$ENTREZID, c("SYMBOL", "GENENAME"))
 
@@ -23,4 +23,11 @@ getDEGS <- function(meta.vars, pheno.data, exprs) {
 
   return(exprs.degs)
   
+}
+
+filterDEGS <- function(degs, pval, fc) {
+  degs <- degs[degs$adj.P.Val < pval,]
+  degs <- degs[order(abs(degs$logFC)),]
+  degs <- degs[abs(degs$logFC) > fc,]  
+  return (degs)
 }
