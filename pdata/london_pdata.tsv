@@ -1,4 +1,4 @@
-Sentrix_ID	Sentrix_Position	Sample_ID	Sample_Name	Trimester	Condition	QC	Comment	Study_ID	Sample_Alt_Name
+Sentrix_ID	Sentrix_Position	Sample_ID	Sample_Name	Trimester	Condition	QC	Comment	Study_ID	Replicate_Sample
 5083790046_A	5083790046	A	674	FHRD-clamp-01-674-H12	1	High risk			london	
 5083790046_B	5083790046	B	683	FHRD-clamp-02-683-H12	1	High risk			london	
 5083790046_C	5083790046	C	684	FHRD-clamp-03-684-H12	1	High risk			london	

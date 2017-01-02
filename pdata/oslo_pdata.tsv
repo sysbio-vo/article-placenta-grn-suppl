@@ -1,4 +1,4 @@
-Sentrix_ID	Sentrix_Position	Sample_ID	Sample_Name	Trimester	Condition	QC	Comment	Study_ID	Sample_Alt_Name
+Sentrix_ID	Sentrix_Position	Sample_ID	Sample_Name	Trimester	Condition	QC	Comment	Study_ID	Replicate_Sample
 4493594599_A	4493594599	A	P191	FHRD-CLAMP-01-P191-H12	3	Preeclampsia		Excluded by previous analysis	oslo	
 4493594599_B	4493594599	B	P154	FHRD-CLAMP-02-P154-H12	3	Preeclampsia			oslo	
 4493594599_C	4493594599	C	P169	FHRD-CLAMP-03-P169-H12	3	Preeclampsia			oslo	

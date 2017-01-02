@@ -37,9 +37,11 @@ exprs <- exprs[,-exl]
 ## Check PCA before batch correction
 if (TEST) {
   pca = prcomp(t(exprs))
-  pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
-  save_plot("../plots/PCA/integrated_PCA_batch.pdf",
-            base_height=6, base_aspect_ratio = 1.5, pl)
+  pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Replicate_Sample"), ncol=2)
+  save_plot("../plots/PCA/integrated_PCA.pdf",
+            base_height=4, base_aspect_ratio = pl[[2]]/2, pl[[1]], nrow=2)
+  save_plot("../plots/PCA/integrated_PCA.svg",
+            base_height=4, base_aspect_ratio = pl[[2]]/2, pl[[1]], nrow=2)
 }
 
 ### Remove batch caused by two different studies
@@ -54,9 +56,11 @@ if (TEST) {
   
 ## Integrated dataset
 pca = prcomp(t(exprs.nobatch))
-pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
+pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Replicate_Sample"), ncol=2)
 save_plot("../plots/PCA/integrated_PCA_nobatch.pdf",
-          base_height=5.5, base_aspect_ratio = 1.6, pl)
+          base_height=3.3, base_aspect_ratio = pl[[2]]/1.1, pl[[1]], nrow=2)
+save_plot("../plots/PCA/integrated_PCA_nobatch.svg",
+          base_height=3.3, base_aspect_ratio = pl[[2]]/1.1, pl[[1]], nrow=2)
 
 eset = ExpressionSet(assayData=as.matrix(exprs.nobatch), phenoData = AnnotatedDataFrame(pdata))
 arrayQualityMetrics(expressionset = eset,
@@ -71,17 +75,21 @@ arrayQualityMetrics(expressionset = eset,
 l <- rownames(pdata[which(pdata$Study_ID=="london"),])
 pca = prcomp(t(exprs.nobatch[,which(colnames(exprs.nobatch) %in% l)]))
 pl <- pcaPlots(pca, pdata[which(pdata$Study_ID=="london"),],
-               c("Condition", "Trimester"), "Integrated data. London")
+               c("Condition", "Trimester"))
 save_plot("../plots/PCA/london_integrated_PCA_nobatch.pdf",
-          base_height=4, base_aspect_ratio = 2.8, pl)
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
+save_plot("../plots/PCA/london_integrated_PCA_nobatch.svg",
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
 
 # Oslo
 l <- rownames(pdata[which(pdata$Study_ID=="oslo"),])
 pca = prcomp(t(exprs.nobatch[,which(colnames(exprs.nobatch) %in% l)]))
 pl <- pcaPlots(pca, pdata[which(pdata$Study_ID=="oslo"),],
-               c("Condition", "Trimester"), "Integrated data. London")
+               c("Condition", "Trimester"))
 save_plot("../plots/PCA/oslo_integrated_PCA_nobatch.pdf",
-          base_height=4, base_aspect_ratio = 2.8, pl)
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
+save_plot("../plots/PCA/oslo_integrated_PCA_nobatch.svg",
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
 
 }
 
@@ -92,9 +100,11 @@ exprs.unique <- getUniqueProbesets(exprs.nobatch, studies[i,]$platformAbbr)
 ## Check if probesets elimintation distorted PCA plot (didn't change much)
 if (TEST) {
   pca = prcomp(t(exprs.unique))
-  pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
+  pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Replicate_Sample"), ncol=2)
   save_plot("../plots/PCA/integrated_PCA_nobatch_unique_probesets.pdf",
-          base_height=5.5, base_aspect_ratio = 1.6, pl)
+            base_height=3.3, base_aspect_ratio = pl[[2]]/1.1, pl[[1]], nrow=2)
+  save_plot("../plots/PCA/integrated_PCA_nobatch_unique_probesets.svg",
+            base_height=3.3, base_aspect_ratio = pl[[2]]/1.1, pl[[1]], nrow=2)
 }
 
 ### Differentially expressed genes
