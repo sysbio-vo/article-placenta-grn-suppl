@@ -34,6 +34,14 @@ exl = which(pdata$QC=="Outlier")
 pdata <- pdata[-exl,]
 exprs <- exprs[,-exl]
 
+## Check PCA before batch correction
+if (TEST) {
+  pca = prcomp(t(exprs))
+  pl <- pcaPlots(pca, pdata, c("Condition", "Trimester", "Study_ID", "Sample_Alt_Name"), "Integrated data", ncol=2)
+  save_plot("../plots/PCA/integrated_PCA_batch.pdf",
+            base_height=6, base_aspect_ratio = 1.5, pl)
+}
+
 ### Remove batch caused by two different studies
 
 batch = as.factor(pdata$Study_ID)

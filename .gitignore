@@ -2,4 +2,5 @@ degs/
 raws/
 plots/
 exprs/
+docs/
 *.Rhistory

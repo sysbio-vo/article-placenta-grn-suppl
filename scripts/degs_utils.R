@@ -39,7 +39,7 @@ filterDEGS <- function(degs, pval, fc, adj) {
   }
   
   # Sort by logFC
-  degs <- degs[order(abs(degs$logFC)),]
+  degs <- degs[order(abs(degs$logFC), decreasing = TRUE),]
   # Filter by logFC
   degs <- degs[abs(degs$logFC) > fc,]  
   return (degs)

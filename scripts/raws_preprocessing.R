@@ -48,14 +48,19 @@ if (studies[i,]$ID=="london") {
 ## Perform PCA and create plots
 pca = prcomp(t(N.exprs))
 pca.nobatch = prcomp(t(N.exprs.nobatch))
-pl <- pcaPlots(pca, pdata, c("Condition", "Sentrix_ID"), studies[i,]$ID)
-pl.nobatch <- pcaPlots(pca.nobatch, pdata, c("Condition", "Sentrix_ID"), studies[i,]$ID)
+pl <- pcaPlots(pca, pdata, c("Condition", "Sentrix_ID"))
+pl.nobatch <- pcaPlots(pca.nobatch, pdata, c("Condition", "Sentrix_ID"))
 
 ## Save plot for manual quality control
-save_plot(paste("../plots/PCA/", studies[i,]$ID, "_preliminary_PCA.pdf", sep=""),
-          base_height=4, base_aspect_ratio = 2.6, pl)
-save_plot(paste("../plots/PCA/", studies[i,]$ID, "_preliminary_PCA_nobatch.pdf", sep=""),
-          base_height=4, base_aspect_ratio = 2.6, pl.nobatch)
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA.pdf", sep=""),
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA.svg", sep=""),
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
+
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA_nobatch.pdf", sep=""),
+          base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]])
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA_nobatch.svg", sep=""),
+          base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]])
 
 ### Manual QC step
 
@@ -79,6 +84,7 @@ arrayQualityMetrics(expressionset = eset,
 exl = which(pdata$QC=="Outlier")
 pdata <- pdata[-exl,]
 N.exprs.nobatch <- N.exprs.nobatch[,-exl]
+N.exprs <- N.exprs[,-exl]
 eset = ExpressionSet(assayData=N.exprs.nobatch, phenoData = AnnotatedDataFrame(pdata))
 arrayQualityMetrics(expressionset = eset,
                     outdir = paste("../plots/AQM/AQM_report_nobatch_nooutliers_", studies[i,]$ID, sep=""),
@@ -87,9 +93,19 @@ arrayQualityMetrics(expressionset = eset,
                     intgroup = c("Condition"))
 ## Final PCA plot
 pca.final = prcomp(t(N.exprs.nobatch))
-pl.final <- pcaPlots(pca.final, pdata, c("Condition", "Sentrix_ID"), studies[i,]$ID)
-save_plot(paste("../plots/PCA/", studies[i,]$ID, "_final_PCA.pdf", sep=""),
-          base_height=4, base_aspect_ratio = 2.6, pl.final)
+pl.final <- pcaPlots(pca.final, pdata, c("Condition", "Sentrix_ID"))
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA_nobatch_nooutliers.pdf", sep=""),
+          base_height=3, base_aspect_ratio = pl.final[[2]], pl.final[[1]])
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA_nobatch_nooutliers.svg", sep=""),
+          base_height=3, base_aspect_ratio = pl.final[[2]], pl.final[[1]])
+
+## PCA plot with batch but no outliers
+pca.final.batch = prcomp(t(N.exprs))
+pl.final.batch <- pcaPlots(pca.final.batch, pdata, c("Condition", "Sentrix_ID"))
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA_nooutliers.pdf", sep=""),
+          base_height=3, base_aspect_ratio = pl.final.batch[[2]], pl.final.batch[[1]])
+save_plot(paste("../plots/PCA/", studies[i,]$ID, "_PCA_nooutliers.svg", sep=""),
+          base_height=3, base_aspect_ratio = pl.final.batch[[2]], pl.final.batch[[1]])
 
 ### If the result is satisfying save the expression data for futher analysis
 
