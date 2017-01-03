@@ -113,55 +113,66 @@ if (TEST) {
 
 # High vs Preeclampsia
 high.degs <- getDEGS(c("High risk", "Preeclampsia"), pdata, exprs.unique)
-write.table(high.degs, paste("../degs/HP_degs.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
+write.table(high.degs, "../degs/HP_degs.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+high.degs.filtered.full <- filterDEGS(high.degs, 0.01, 0)
 high.degs <- filterDEGS(high.degs, 0.01, 3.5)
 
 # Low vs Preeclampsia
 low.degs <- getDEGS(c("Low risk", "Preeclampsia"), pdata, exprs.unique)
-write.table(low.degs, paste("../degs/LP_degs.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
+write.table(low.degs, "../degs/LP_degs.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+low.degs.filtered.full <- filterDEGS(low.degs, 0.01, 0)
 low.degs <- filterDEGS(low.degs, 0.01, 3.5)
 
-# Some comparison
-common <- intersect(low.degs$SYMBOL, high.degs$SYMBOL)
-Unique_Gene <- !(low.degs$SYMBOL %in% common)
-low.degs <- cbind(Unique_Gene, low.degs)
-Unique_Gene <- !(high.degs$SYMBOL %in% common)
-high.degs <- cbind(Unique_Gene, high.degs)
+# Write short lists to file
+write.table(high.degs, "../degs/HP_degs_short.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+write.table(low.degs, "../degs/LP_degs_short.tsv", sep="\t", row.names = FALSE, quote=FALSE)
 
-write.table(high.degs, paste("../degs/HP_degs_short.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
-write.table(low.degs, paste("../degs/LP_degs_short.tsv", sep=""), sep="\t",
+# Comparison between two groups to find unique genes
+common <- intersect(low.degs.filtered.full$SYMBOL, high.degs.filtered.full$SYMBOL)
+ugl <- !(low.degs.filtered.full$SYMBOL %in% common)
+ugh <- !(high.degs.filtered.full$SYMBOL %in% common)
+high.degs.filtered <- high.degs.filtered.full[which(ugh==TRUE),]
+high.degs.filtered <- filterDEGS(high.degs.filtered, 0.01, 0.7)
+
+l <- low.degs.filtered.full[which(ugl==FALSE), c(4, 5)]
+h <- high.degs.filtered.full[which(ugh==FALSE), c(4, 5)]
+l <- l[order(match(rownames(l), rownames(h))), ]
+cor(l, h,  method="kendall")
+
+write.table(high.degs.filtered, "../degs/HP_degs_short_absolute.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
 
 ## Control versus high and low
 
 # High vs Control
-
 high.degs <- getDEGS(c("High risk", "Control"), pdata, exprs.unique)
-write.table(high.degs, paste("../degs/HC_degs.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
+write.table(high.degs, "../degs/HC_degs.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+high.degs.filtered.full <- filterDEGS(high.degs, 0.01, 0)
 high.degs <- filterDEGS(high.degs, 0.01, 3.5)
 
 # Low vs Control
-
 low.degs <- getDEGS(c("Low risk", "Control"), pdata, exprs.unique)
-write.table(low.degs, paste("../degs/LC_degs.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
+write.table(low.degs, "../degs/LC_degs.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+low.degs.filtered.full <- filterDEGS(low.degs, 0.01, 0)
 low.degs <- filterDEGS(low.degs, 0.01, 3.5)
 
-# Some comparison
+# Write short lists to file
+write.table(high.degs, "../degs/HC_degs_short.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+write.table(low.degs, "../degs/LC_degs_short.tsv", sep="\t", row.names = FALSE, quote=FALSE)
 
-common <- intersect(low.degs$SYMBOL, high.degs$SYMBOL)
-Unique_Gene <- !(low.degs$SYMBOL %in% common)
-low.degs <- cbind(Unique_Gene, low.degs)
-Unique_Gene <- !(high.degs$SYMBOL %in% common)
-high.degs <- cbind(Unique_Gene, high.degs)
+# Comparison between two groups to find unique genes
+common <- intersect(low.degs.filtered.full$SYMBOL, high.degs.filtered.full$SYMBOL)
+ugl <- !(low.degs.filtered.full$SYMBOL %in% common)
+ugh <- !(high.degs.filtered.full$SYMBOL %in% common)
+low.degs.filtered <- low.degs.filtered.full[which(ugl==TRUE),]
+low.degs.filtered <- filterDEGS(low.degs.filtered, 0.01, 0.7)
 
-write.table(high.degs, paste("../degs/HC_degs_short.tsv", sep=""), sep="\t",
-            row.names = FALSE, quote=FALSE)
-write.table(low.degs, paste("../degs/LC_degs_short.tsv", sep=""), sep="\t",
+l <- low.degs.filtered.full[which(ugl==FALSE), c(4, 5)]
+h <- high.degs.filtered.full[which(ugh==FALSE), c(4, 5)]
+l <- l[order(match(rownames(l), rownames(h))), ]
+cor(l, h,  method="kendall")
+
+write.table(low.degs.filtered, "../degs/LC_degs_short_absolute.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
 
 ## Control vs Preeclampsia
