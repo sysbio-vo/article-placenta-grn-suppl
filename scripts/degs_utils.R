@@ -1,12 +1,12 @@
-getDEGS <- function(meta.vars, pheno.data, exprs) {
+getDEGS <- function(meta.vars, pheno.data, exprs, noannotate=FALSE) {
   # Subset groups for comparison
   ind <- c()
   for (i in meta.vars) {
     ind <- c(ind, which(pheno.data$Condition==i))
   }
   pdata.short <- pheno.data[ind, ]
-  exprs.short <- exprs[, ind]
-  #exprs.short <- exprs.short[,order(match(rownames(pdata.short),colnames(exprs)))]
+  exprs.short <- exprs[,which(colnames(exprs) %in% rownames(pdata.short))]
+  exprs.short <- exprs.short[,order(match(colnames(exprs.short), rownames(pdata.short)))]
   
   # Create design matrix
   design = model.matrix(~as.factor(Condition), data=pdata.short)
@@ -19,12 +19,17 @@ getDEGS <- function(meta.vars, pheno.data, exprs) {
 
   # Merge degs with expression matrix
   exprs.degs <- merge(degs, exprs.short, by="row.names")
-  colnames(exprs.degs)[1] <- "ENTREZID"
-  # Add information about gene names
-  EntrezID_Symbol<-select(org.Hs.eg.db, exprs.degs$ENTREZID, c("SYMBOL", "GENENAME"))
-  exprs.degs <- cbind(EntrezID_Symbol, exprs.degs)
-  exprs.degs <- exprs.degs[,-4]
-
+  if (noannotate) {
+    rownames(exprs.degs) <- exprs.degs[, 1]
+    exprs.degs <- exprs.degs[, -1]
+  } else {
+    colnames(exprs.degs)[1] <- "ENTREZID"
+    # Add information about gene names
+    EntrezID_Symbol<-select(org.Hs.eg.db, exprs.degs$ENTREZID, c("SYMBOL", "GENENAME"))
+    exprs.degs <- cbind(EntrezID_Symbol, exprs.degs)
+    exprs.degs <- exprs.degs[,-4]
+  }
+  
   return(exprs.degs)
 }
 
