@@ -55,7 +55,10 @@ dotplot.gsea <- function(df, font.size=12) {
   require(stringr)
   idx <- order(df$GeneRatio, decreasing = FALSE)
   df$Description <- str_wrap(df$Description, width = 70)
-  df$Description <- factor(df$Description, levels=df$Description[idx])
+  d <- df$Description[idx]
+  d <- d[!duplicated(d)]
+  df$Description <- factor(df$Description, levels = d)
+
   x <- "GeneRatio"
   size <- "Count"
   colorBy="p.adjust"
