@@ -132,6 +132,8 @@ common <- intersect(low.degs.filtered.full$SYMBOL, high.degs.filtered.full$SYMBO
 ugl <- !(low.degs.filtered.full$SYMBOL %in% common)
 ugh <- !(high.degs.filtered.full$SYMBOL %in% common)
 high.degs.filtered <- high.degs.filtered.full[which(ugh==TRUE),]
+write.table(high.degs.filtered, "../degs/HP_degs_absolute.tsv", sep="\t",
+            row.names = FALSE, quote=FALSE)
 high.degs.filtered <- filterDEGS(high.degs.filtered, 0.01, 0.7)
 
 l <- low.degs.filtered.full[which(ugl==FALSE), c(4, 5)]
@@ -165,6 +167,8 @@ common <- intersect(low.degs.filtered.full$SYMBOL, high.degs.filtered.full$SYMBO
 ugl <- !(low.degs.filtered.full$SYMBOL %in% common)
 ugh <- !(high.degs.filtered.full$SYMBOL %in% common)
 low.degs.filtered <- low.degs.filtered.full[which(ugl==TRUE),]
+write.table(low.degs.filtered, "../degs/LC_degs_absolute.tsv", sep="\t",
+            row.names = FALSE, quote=FALSE)
 low.degs.filtered <- filterDEGS(low.degs.filtered, 0.01, 0.7)
 
 l <- low.degs.filtered.full[which(ugl==FALSE), c(4, 5)]
