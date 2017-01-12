@@ -72,6 +72,42 @@ pl <- dotplot(ck, showCategory = 50) + theme_bw(base_size = 18) +
   theme(axis.title.x=element_text(margin=margin(t=10)))
 
 save_plot("../plots/FunctionalAnalysis/LCPH_enrichGO_CC.pdf",
-          base_height=15, base_aspect_ratio=1.7, pl)
+          base_height=15, base_aspect_ratio=0.7, pl)
 save_plot("../plots/FunctionalAnalysis/LCPH_enrichGO_CC.svg",
-          base_height=15, base_aspect_ratio=1.7, pl)
+          base_height=15, base_aspect_ratio=0.7, pl)
+
+
+### Compare LC and HP
+
+LC.degs.filtered <- filterDEGS(LC.degs, 0.01, 0)
+HP.degs.filtered <- filterDEGS(HP.degs, 0.01, 0)
+common <- intersect(LC.degs.filtered$SYMBOL, HP.degs.filtered$SYMBOL)
+LC.degs.c <- LC.degs.filtered[(LC.degs.filtered$SYMBOL %in% common), c("SYMBOL", "GENENAME", "logFC", "AveExpr")]
+HP.degs.c <- HP.degs.filtered[(HP.degs.filtered$SYMBOL %in% common), c("SYMBOL", "GENENAME", "logFC", "AveExpr")]
+
+merged <- merge(LC.degs.c, HP.degs.c, by="SYMBOL")
+merged <- merged[, -5]
+colnames(merged) <- c("SYMBOL", "GENENAME", "logFC.LC", "AveExpr.LC", "logFC.HP", "AveExpr.HP")
+
+cor(merged$logFC.LC, merged$logFC.HP)
+
+merged$logFC.substr <- -(merged$logFC.LC-merged$logFC.HP)
+merged.filtered <- merged[abs(merged$logFC.substr)>1,]
+
+m <- as.matrix(merged.filtered[,c("logFC.LC", "logFC.HP")])
+rownames(m) <- merged.filtered$SYMBOL
+library(reshape2)
+library(RColorBrewer)
+m <- melt(m)
+m <- m[order(m$value, decreasing = TRUE),]
+m$Var1 <- factor(m$Var1, levels=m[!duplicated(m$Var1),]$Var1)
+  
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
+pl <- ggplot(melt(m), aes(Var1, Var2, fill=value)) + geom_raster() + coord_flip() +
+      scale_fill_gradientn(colours = myPalette(100)) +
+      theme(axis.title = element_blank()) +
+      labs(fill='logFC') 
+save_plot("../plots/FunctionalAnalysis/LCPH_heatmap.pdf",
+          base_height=12, base_aspect_ratio=0.35, pl)
+save_plot("../plots/FunctionalAnalysis/LCPH_heatmap.svg",
+          base_height=12, base_aspect_ratio=0.35, pl)

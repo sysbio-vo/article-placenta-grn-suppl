@@ -139,7 +139,7 @@ high.degs.filtered <- filterDEGS(high.degs.filtered, 0.01, 0.7)
 l <- low.degs.filtered.full[which(ugl==FALSE), c(4, 5)]
 h <- high.degs.filtered.full[which(ugh==FALSE), c(4, 5)]
 l <- l[order(match(rownames(l), rownames(h))), ]
-cor(l, h,  method="kendall")
+cor(l, h)
 
 write.table(high.degs.filtered, "../degs/HP_degs_short_absolute.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
@@ -174,7 +174,7 @@ low.degs.filtered <- filterDEGS(low.degs.filtered, 0.01, 0.7)
 l <- low.degs.filtered.full[which(ugl==FALSE), c(4, 5)]
 h <- high.degs.filtered.full[which(ugh==FALSE), c(4, 5)]
 l <- l[order(match(rownames(l), rownames(h))), ]
-cor(l, h,  method="kendall")
+cor(l, h)
 
 write.table(low.degs.filtered, "../degs/LC_degs_short_absolute.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)

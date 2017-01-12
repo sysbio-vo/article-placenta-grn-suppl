@@ -5,11 +5,13 @@ getDEGS <- function(meta.vars, pheno.data, exprs, noannotate=FALSE) {
     ind <- c(ind, which(pheno.data$Condition==i))
   }
   pdata.short <- pheno.data[ind, ]
+  print(head(pdata.short))
   exprs.short <- exprs[,which(colnames(exprs) %in% rownames(pdata.short))]
   exprs.short <- exprs.short[,order(match(colnames(exprs.short), rownames(pdata.short)))]
   
   # Create design matrix
-  design = model.matrix(~as.factor(Condition), data=pdata.short)
+  design = model.matrix(~factor(pdata.short$Condition, levels=meta.vars), data=pdata.short)
+  print(design)
   colnames(design) <- c(meta.vars[1], paste(meta.vars[1], "vs", meta.vars[2], sep=""))
   # Fit with linear models
   fit <- lmFit(exprs.short, design)
