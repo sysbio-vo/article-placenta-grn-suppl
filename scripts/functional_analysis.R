@@ -1,6 +1,8 @@
 library(org.Hs.eg.db)
 library(stringr)
 library(cowplot)
+library(reshape2)
+library(RColorBrewer)
 source("degs_utils.R")
 source("go_utils.R")
 library(devtools)
@@ -20,8 +22,10 @@ LC.degs <- read.table("../degs/LC_degs.tsv", sep="\t", quote = "",
                              header=TRUE, check.names=FALSE)
 HP.degs <- read.table("../degs/HP_degs.tsv", sep="\t", quote = "",
                              header=TRUE, check.names=FALSE)
+CP.degs <- read.table("../degs/CP_degs.tsv", sep="\t", quote = "",
+                      header=TRUE, check.names=FALSE)
 
-## Filter lists
+## Filter and order lists
 LC.degs <- filterDEGS(LC.degs, 0.01, 0)
 LC.degs <- LC.degs[order(LC.degs$logFC, decreasing = TRUE),]
 
@@ -33,22 +37,12 @@ HP.degs.unique <- HP.degs.unique[order(HP.degs.unique$logFC, decreasing = TRUE),
 
 ### GSEA GO analysis
 
-## Full datasets
 lc.degs.gse <- LC.degs$logFC
 names(lc.degs.gse) <- LC.degs$ENTREZID
 hp.degs.gse <- HP.degs$logFC
 names(hp.degs.gse) <- HP.degs$ENTREZID
 
 doGSEGO(lc.degs.gse, hp.degs.gse, by="GeneRatio", order=TRUE)
-
-### Unique genes datasets
-#lc.degs.gse <- LC.degs.unique$logFC
-#names(lc.degs.gse) <- LC.degs.unique$ENTREZID
-#hp.degs.gse <- HP.degs.unique$logFC
-#names(hp.degs.gse) <- HP.degs.unique$ENTREZID
-
-#doGSEGO(lc.degs.gse, hp.degs.gse, x.group="LC.u", y.group="HP.u", by="GeneRatio", order=TRUE)
-
 
 ### CompareClusters
 
@@ -76,38 +70,61 @@ save_plot("../plots/FunctionalAnalysis/LCPH_enrichGO_CC.pdf",
 save_plot("../plots/FunctionalAnalysis/LCPH_enrichGO_CC.svg",
           base_height=15, base_aspect_ratio=0.7, pl)
 
-
 ### Compare LC and HP
 
-LC.degs.filtered <- filterDEGS(LC.degs, 0.01, 0)
-HP.degs.filtered <- filterDEGS(HP.degs, 0.01, 0)
-common <- intersect(LC.degs.filtered$SYMBOL, HP.degs.filtered$SYMBOL)
-LC.degs.c <- LC.degs.filtered[(LC.degs.filtered$SYMBOL %in% common), c("SYMBOL", "GENENAME", "logFC", "AveExpr")]
-HP.degs.c <- HP.degs.filtered[(HP.degs.filtered$SYMBOL %in% common), c("SYMBOL", "GENENAME", "logFC", "AveExpr")]
+# Find common genes for LC and HP
+common <- intersect(LC.degs$SYMBOL, HP.degs$SYMBOL)
+LC.degs.c <- LC.degs[(LC.degs$SYMBOL %in% common), c("SYMBOL", "GENENAME", "logFC", "AveExpr")]
+HP.degs.c <- HP.degs[(HP.degs$SYMBOL %in% common), c("SYMBOL", "GENENAME", "logFC", "AveExpr")]
 
+# Merge lists
 merged <- merge(LC.degs.c, HP.degs.c, by="SYMBOL")
 merged <- merged[, -5]
 colnames(merged) <- c("SYMBOL", "GENENAME", "logFC.LC", "AveExpr.LC", "logFC.HP", "AveExpr.HP")
 
+# Check correlation
 cor(merged$logFC.LC, merged$logFC.HP)
 
-merged$logFC.substr <- -(merged$logFC.LC-merged$logFC.HP)
-merged.filtered <- merged[abs(merged$logFC.substr)>1,]
+# Find difference between LC and HP logFC and filter based on difference
+merged$logFC.HP_LC <- -(merged$logFC.LC-merged$logFC.HP)
+merged.filtered <- merged[abs(merged$logFC.HP_LC)>1,]
 
-m <- as.matrix(merged.filtered[,c("logFC.LC", "logFC.HP")])
+# Search for the same genes in CP DEG list
+CP.degs.f <- CP.degs[CP.degs$SYMBOL %in% merged.filtered$SYMBOL,]
+CP.degs.f <- CP.degs.f[order(match(CP.degs.f$SYMBOL, merged.filtered$SYMBOL)),c("logFC", "adj.P.Val")]
+colnames(CP.degs.f)[1] <- c("logFC.CP")
+CP.degs.f$logFC.CP[which(CP.degs.f$adj.P.Val >= 0.05)] <- NA
+
+merged.filtered <- cbind(merged.filtered, CP.degs.f)
+
+## Prepare for plotting
+m <- merged.filtered[,c("SYMBOL", "logFC.LC", "logFC.HP", "logFC.HP_LC", "logFC.CP")]
 rownames(m) <- merged.filtered$SYMBOL
-library(reshape2)
-library(RColorBrewer)
-m <- melt(m)
-m <- m[order(m$value, decreasing = TRUE),]
-m$Var1 <- factor(m$Var1, levels=m[!duplicated(m$Var1),]$Var1)
-  
+m <- melt(m, id.vars="SYMBOL")
+m$value <- round(m$value, 2)
+# Create separate variable to use with facetting
+m$LCHP = "LC minus HP logFC compared to CP"
+ind <- c(which(m$variable=="logFC.LC"), which(m$variable=="logFC.HP"))
+m$LCHP[ind] <- "LC and HP logFC"
+# Sort by logFC.LC
+sort <- m[m$variable=="logFC.LC",]
+sort <- sort[order(sort$value, decreasing = TRUE),]
+m$SYMBOL <- factor(m$SYMBOL, levels=sort$SYMBOL)
+
+# Use custom palette
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
-pl <- ggplot(melt(m), aes(Var1, Var2, fill=value)) + geom_raster() + coord_flip() +
-      scale_fill_gradientn(colours = myPalette(100)) +
+
+pl <- ggplot(m, aes(x=SYMBOL, y=variable, fill=value)) + coord_flip() +
+      geom_tile(aes(fill = value)) + 
+      geom_text(aes(label = value)) +
+      scale_fill_gradientn(colours = myPalette(100), na.value="white") +
       theme(axis.title = element_blank()) +
-      labs(fill='logFC') 
+      labs(fill='logFC') +
+      facet_grid(~LCHP, scales = "free_x") +
+      theme(axis.text.y = element_text(size=10),
+            panel.spacing.x = unit(5, "mm")) 
+
 save_plot("../plots/FunctionalAnalysis/LCPH_heatmap.pdf",
-          base_height=12, base_aspect_ratio=0.35, pl)
+          base_height=14, base_aspect_ratio=0.57, pl)
 save_plot("../plots/FunctionalAnalysis/LCPH_heatmap.svg",
-          base_height=12, base_aspect_ratio=0.35, pl)
+          base_height=14, base_aspect_ratio=0.57, pl)
