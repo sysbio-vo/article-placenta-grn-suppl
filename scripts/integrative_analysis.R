@@ -132,7 +132,7 @@ common <- intersect(low.degs.filtered.full$SYMBOL, high.degs.filtered.full$SYMBO
 ugl <- !(low.degs.filtered.full$SYMBOL %in% common)
 ugh <- !(high.degs.filtered.full$SYMBOL %in% common)
 high.degs.filtered <- high.degs.filtered.full[which(ugh==TRUE),]
-write.table(high.degs.filtered, "../degs/HP_degs_absolute.tsv", sep="\t",
+write.table(high.degs.filtered, "../degs/HP_degs_without_LP.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
 high.degs.filtered <- filterDEGS(high.degs.filtered, 0.01, 0.7)
 
@@ -141,7 +141,7 @@ h <- high.degs.filtered.full[which(ugh==FALSE), c(4, 5)]
 l <- l[order(match(rownames(l), rownames(h))), ]
 cor(l, h)
 
-write.table(high.degs.filtered, "../degs/HP_degs_short_absolute.tsv", sep="\t",
+write.table(high.degs.filtered, "../degs/HP_degs_without_LP_short.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
 
 ## Control versus high and low
@@ -167,7 +167,7 @@ common <- intersect(low.degs.filtered.full$SYMBOL, high.degs.filtered.full$SYMBO
 ugl <- !(low.degs.filtered.full$SYMBOL %in% common)
 ugh <- !(high.degs.filtered.full$SYMBOL %in% common)
 low.degs.filtered <- low.degs.filtered.full[which(ugl==TRUE),]
-write.table(low.degs.filtered, "../degs/LC_degs_absolute.tsv", sep="\t",
+write.table(low.degs.filtered, "../degs/LC_degs_without_HC.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
 low.degs.filtered <- filterDEGS(low.degs.filtered, 0.01, 0.7)
 
@@ -176,7 +176,7 @@ h <- high.degs.filtered.full[which(ugh==FALSE), c(4, 5)]
 l <- l[order(match(rownames(l), rownames(h))), ]
 cor(l, h)
 
-write.table(low.degs.filtered, "../degs/LC_degs_short_absolute.tsv", sep="\t",
+write.table(low.degs.filtered, "../degs/LC_degs_without_HC_short.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
 
 ## Control vs Preeclampsia
@@ -188,20 +188,48 @@ degs <- filterDEGS(degs, 0.05, 0.7)
 write.table(degs, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
-# Some comparison
-degs.int <- read.table(paste("../degs/CP_degs_short.tsv", sep=""),
-                           header=TRUE, check.names=FALSE, sep = "\t")
 
-degs.ind <- read.table(paste("../degs/oslo_degs_short.tsv", sep=""),
-                       header=TRUE, check.names=FALSE, sep = "\t")
+## Find unique genes for Low versus Control and High versus Preeclampsia
+degs.lc <- read.table(paste("../degs/LC_degs.tsv", sep=""),
+                       header=TRUE, check.names=FALSE, sep = "\t", quote = "")
+degs.hp <- read.table(paste("../degs/HP_degs.tsv", sep=""),
+                       header=TRUE, check.names=FALSE, sep = "\t", quote = "")
+degs.lc <- filterDEGS(degs.lc, 0.01, 0)
+degs.hp <- filterDEGS(degs.hp, 0.01, 0)
 
-common <- intersect(degs.int$SYMBOL, degs.ind$SYMBOL)
-Unique_Gene <- !(degs.int$SYMBOL %in% common)
-degs.int <- cbind(Unique_Gene, degs.int)
-Unique_Gene <- !(degs.ind$SYMBOL %in% common)
-degs.ind <- cbind(Unique_Gene, degs.ind)
+common <- intersect(degs.lc$SYMBOL, degs.hp$SYMBOL)
+ugl <- !(degs.lc$SYMBOL %in% common)
+ugh <- !(degs.hp$SYMBOL %in% common)
+degs.lc <- degs.lc[which(ugl==TRUE),]
+degs.hp <- degs.hp[which(ugh==TRUE),]
 
-write.table(degs.int, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
+write.table(degs.lc, "../degs/LC_degs_without_HP.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
-write.table(degs.ind, paste("../degs/oslo_degs_short.tsv", sep=""), sep="\t",
+write.table(degs.hp, "../degs/HP_degs_without_LC.tsv", sep="\t",
             row.names = FALSE, quote=FALSE)
+
+degs.lc <- filterDEGS(degs.lc, 0.01, 0.7)
+degs.hp <- filterDEGS(degs.hp, 0.01, 0.7)
+write.table(degs.lc, "../degs/LC_degs_without_HP_short.tsv", sep="\t",
+            row.names = FALSE, quote=FALSE)
+write.table(degs.hp, "../degs/HP_degs_without_LC_short.tsv", sep="\t",
+            row.names = FALSE, quote=FALSE)
+
+
+# Some comparison of stand-alone and integrated DEGs
+# degs.int <- read.table(paste("../degs/CP_degs_short.tsv", sep=""),
+#                            header=TRUE, check.names=FALSE, sep = "\t")
+# 
+# degs.ind <- read.table(paste("../degs/oslo_degs_short.tsv", sep=""),
+#                        header=TRUE, check.names=FALSE, sep = "\t")
+# 
+# common <- intersect(degs.int$SYMBOL, degs.ind$SYMBOL)
+# Unique_Gene <- !(degs.int$SYMBOL %in% common)
+# degs.int <- cbind(Unique_Gene, degs.int)
+# Unique_Gene <- !(degs.ind$SYMBOL %in% common)
+# degs.ind <- cbind(Unique_Gene, degs.ind)
+# 
+# write.table(degs.int, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
+#             row.names = FALSE, quote=FALSE)
+# write.table(degs.ind, paste("../degs/oslo_degs_short.tsv", sep=""), sep="\t",
+#             row.names = FALSE, quote=FALSE)
