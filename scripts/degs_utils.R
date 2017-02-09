@@ -73,3 +73,32 @@ getUniqueProbesets <- function(exprs, platform) {
   
   return(exprs)
 }
+
+compareDEGs <- function(degsA, degsB, nameA, nameB) {
+  common <- intersect(degsA$SYMBOL, degsB$SYMBOL)
+  inB <- degsA$SYMBOL %in% common
+  inA <- degsB$SYMBOL %in% common
+  
+  degsA <- cbind(inB, degsA)
+  degsB <- cbind(inA, degsB)
+  
+  l <- degsA[which(inB==TRUE), c("logFC", "AveExpr")]
+  h <- degsB[which(inA==TRUE), c("logFC", "AveExpr")]
+  l <- l[order(match(rownames(l), rownames(h))), ]
+  c <- cor(l, h)
+  
+  difference <- h$logFC - l$logFC
+  names(difference) <- rownames(l)
+  difference <- difference[abs(difference)>1]
+  
+  diffB <- rep(FALSE, nrow(degsA))
+  degsA <- cbind(diffB, degsA)
+  degsA[which(rownames(degsA) %in% names(difference)),]$diffB <- TRUE
+  diffA <- rep(FALSE, nrow(degsB))
+  degsB <- cbind(diffA, degsB)
+  degsB[which(rownames(degsB) %in% names(difference)),]$diffA <- TRUE
+  colnames(degsA)[1:2] <- c(paste("diff", nameB, sep=""), paste("in", nameB, sep=""))
+  colnames(degsB)[1:2] <- c(paste("diff", nameA, sep=""), paste("in", nameA, sep=""))
+  
+  return (list(degsA, degsB, c))
+}

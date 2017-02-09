@@ -2,6 +2,8 @@ require(ggplot2)
 require(cowplot)
 require(ggfortify)
 library(grid)
+library(reshape2)
+library(RColorBrewer)
 
 getAspectRatio <- function(p){
   gb <- ggplot_build(p)
@@ -46,4 +48,34 @@ pcaPlots <- function(pca.data, pheno.data, meta.vars, title, ncol) {
   }
   pl <- pl + theme(plot.margin=margin(t=10, r=10, b=10, l=10))
   return(list(pl, ar))
+}
+
+genesHeatmap <- function(df, nameA, nameB) {
+  rownames(df) <- df$SYMBOL
+  m <- melt(df, id.vars="SYMBOL")
+  m$value <- round(m$value, 2)
+  # Create separate variable to use with facetting
+  m$LCHP = paste("2. ", nameB, " minus ", nameA, " logFC compared to CP", sep="")
+  ind <- c(which(m$variable==paste("logFC.", nameA, sep="")),
+           which(m$variable==paste("logFC.", nameB, sep="")))
+  m$LCHP[ind] <- paste("1. ", nameA, " and ", nameB, " logFC", sep="")
+  # Sort by logFC.LC
+  sort <- m[m$variable==paste("logFC.", nameA, sep=""),]
+  sort <- sort[order(sort$value, decreasing = TRUE),]
+  m$SYMBOL <- factor(m$SYMBOL, levels=sort$SYMBOL)
+  
+  # Use custom palette
+  myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
+  
+  pl <- ggplot(m, aes(x=SYMBOL, y=variable, fill=value)) + coord_flip() +
+    geom_tile(aes(fill = value)) + 
+    geom_text(aes(label = value)) +
+    scale_fill_gradientn(colours = myPalette(100), na.value="white") +
+    theme(axis.title = element_blank()) +
+    labs(fill='logFC') +
+    facet_grid(~LCHP, scales = "free_x") +
+    theme(axis.text.y = element_text(size=10),
+          panel.spacing.x = unit(7, "mm"))   
+  
+  return(pl)
 }
