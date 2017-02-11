@@ -14,7 +14,8 @@ HP.degs <- read.table("../degs/HP_degs.tsv", sep="\t", quote = "",
                       header=TRUE, check.names=FALSE)
 CP.degs <- read.table("../degs/CP_degs.tsv", sep="\t", quote = "",
                       header=TRUE, check.names=FALSE)
-
+TFs  <- read.table("../pdata/TFs.tsv", sep="\t", quote = "",
+                   header=TRUE, check.names=FALSE)
 
 ## Filter lists by p-val
 names <- LC.degs[,c(1:3)]
@@ -49,36 +50,23 @@ merged$logFC.LP_HC <- merged$logFC.LP - merged$logFC.HC
 merged$logFC.LP_HP <- merged$logFC.LP - merged$logFC.HP
 merged$logFC.HC_HP <- merged$logFC.HC - merged$logFC.HP
 
-## Filter by different criteria
+## Filter alt
+tfs.big <- merged[which(merged$ENTREZID %in% TFs$ENTREZID),]
+ind <- which(apply(merged[, c(14:19)], MARGIN = 1, function(x) any(abs(x) > 1, na.rm = TRUE))==TRUE)
+merged.diff <- merged[ind,]
+merged <- merged[-ind,]
 
-# Find all abs(logFC) < 0.7
-ind <- which(apply(merged[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 0.7, na.rm = TRUE))==TRUE)
-merged.a <- merged[ind,]
+ind <- which(apply(merged[, c(4:7)], MARGIN = 1, function(x) all(abs(x) > 0, na.rm = FALSE))==TRUE)
+merged.na <- merged[-ind,]
+merged <- merged[ind,]
 
-# Find any logFC differences > 0.7
-ind <- which(apply(merged[, c(14:19)], MARGIN = 1, function(x) any(abs(x) > 0.7, na.rm = TRUE))==TRUE)
-merged.b <- merged[ind,]
-merged.c <- merged[-ind,]
-  
-# Find genes that for all abs(logFC) < 0.7 have logFC differences > 0.7
-common <- intersect(merged.a$ENTREZID, merged.b$ENTREZID)
-merged.a <- merged.a[-which(merged.a$ENTREZID %in% common),]
+ind <- which(apply(merged.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 0.7, na.rm = TRUE))==TRUE)
+merged.na <- merged.na[-ind,]
 
-# Exclude genes, that have abs(logFC) < 0.7, while logFC differences < 0.7 as well
-merged <- merged[-which(merged$ENTREZID %in% merged.a$ENTREZID),]
+merged <- merged[which(abs(merged$logFC.CP)>0.7),]
 
-# Find genes that have all logFC present, except CP
-ind <- which(apply(merged.c[, c(4:7)], MARGIN = 1, function(x) all(abs(x) > 0, na.rm = FALSE))==TRUE)
-merged.c <- merged.c[ind,]
-merged.c <- merged.c[which(is.na(merged.c$logFC.CP)),]
-# Filter above genes if their logFC differences > 0.7
-ind <- which(apply(merged.c[, c(14:19)], MARGIN = 1, function(x) any(abs(x) > 0.7, na.rm = TRUE))==TRUE)
-if (length(ind)>0) {
-  merged.c <- merged[-ind,]
-}
-
-# Exclude genes, that have all logFC present except CP and their logFC differences < 0.7
-merged <- merged[-which(merged$ENTREZID %in% merged.c$ENTREZID),]
+total <- rbind(merged.diff, merged.na, merged)
+tfs <- total[which(total$ENTREZID %in% TFs$ENTREZID),]
 
 ### Compare LC and HP
 
