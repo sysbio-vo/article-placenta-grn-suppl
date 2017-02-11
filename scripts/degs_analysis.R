@@ -51,19 +51,19 @@ exprs <- exprs[order(match(rownames(exprs), merged$ENTREZID)),]
 
 p <- pdata[pdata$Condition=="Low risk",]
 e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
-merged$meanL <- e
+merged$mL <- e
 
 p <- pdata[pdata$Condition=="High risk",]
 e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
-merged$meanH <- e
+merged$mH <- e
 
 p <- pdata[pdata$Condition=="Control",]
 e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
-merged$meanC <- e
+merged$mC <- e
 
 p <- pdata[pdata$Condition=="Preeclampsia",]
 e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
-merged$meanP <- e
+merged$mP <- e
 
 ## Find the difference between logFCs
 merged$logFC.LC_LP <- round(merged$logFC.LC - merged$logFC.LP, 4)
@@ -84,7 +84,7 @@ ind <- which(apply(merged[, c(4:7)], MARGIN = 1, function(x) all(abs(x) > 0, na.
 merged.na <- merged[-ind,]
 merged <- merged[ind,]
 
-ind <- which(apply(merged.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 1, na.rm = TRUE))==TRUE)
+ind <- which(apply(merged.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 1.3, na.rm = TRUE))==TRUE)
 merged.na <- merged.na[-ind,]
 
 merged <- merged[which(abs(merged$logFC.CP)>1),]
