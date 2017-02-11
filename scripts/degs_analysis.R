@@ -16,19 +16,23 @@ CP.degs <- read.table("../degs/CP_degs.tsv", sep="\t", quote = "",
                       header=TRUE, check.names=FALSE)
 TFs  <- read.table("../pdata/TFs.tsv", sep="\t", quote = "",
                    header=TRUE, check.names=FALSE)
+exprs <- read.table("../exprs/exprs_all.tsv", sep="\t", quote = "",
+                    header=TRUE, check.names=FALSE)
+pdata  <- read.table("../pdata/pdata.tsv", sep="\t", quote = "",
+                   header=TRUE, check.names=FALSE)
 
 ## Filter lists by p-val
 names <- LC.degs[,c(1:3)]
-LC.degs <- filterDEGS(LC.degs, 0.01, 0)[,c(1, 4:5)]
-LP.degs <- filterDEGS(LP.degs, 0.01, 0)[,c(1, 4:5)]
-HC.degs <- filterDEGS(HC.degs, 0.01, 0)[,c(1, 4:5)]
-HP.degs <- filterDEGS(HP.degs, 0.01, 0)[,c(1, 4:5)]
-CP.degs <- filterDEGS(CP.degs, 0.05, 0)[,c(1, 4:5)]
-colnames(LC.degs) <- c("ENTREZID", "logFC.LC", "AveExprs.LC")
-colnames(LP.degs) <- c("ENTREZID", "logFC.LP", "AveExprs.LP")
-colnames(HC.degs) <- c("ENTREZID", "logFC.HC", "AveExprs.HC")
-colnames(HP.degs) <- c("ENTREZID", "logFC.HP", "AveExprs.HP")
-colnames(CP.degs) <- c("ENTREZID", "logFC.CP", "AveExprs.CP")
+LC.degs <- filterDEGS(LC.degs, 0.01, 0)[,c(1, 4)]
+LP.degs <- filterDEGS(LP.degs, 0.01, 0)[,c(1, 4)]
+HC.degs <- filterDEGS(HC.degs, 0.01, 0)[,c(1, 4)]
+HP.degs <- filterDEGS(HP.degs, 0.01, 0)[,c(1, 4)]
+CP.degs <- filterDEGS(CP.degs, 0.05, 0)[,c(1, 4)]
+colnames(LC.degs) <- c("ENTREZID", "logFC.LC")
+colnames(LP.degs) <- c("ENTREZID", "logFC.LP")
+colnames(HC.degs) <- c("ENTREZID", "logFC.HC")
+colnames(HP.degs) <- c("ENTREZID", "logFC.HP")
+colnames(CP.degs) <- c("ENTREZID", "logFC.CP")
 
 ## Merge all lists
 merged <- merge(names, LC.degs, by="ENTREZID", all=TRUE)
@@ -40,19 +44,39 @@ merged <- merge(merged, CP.degs, by="ENTREZID", all=TRUE)
 ## Filter if all logFC is NA
 ind <- which(!rowSums(!is.na(merged[,4:ncol(merged)]))) 
 merged <- merged[-ind,]
-merged <- merged[,c(1:3, 4, 6, 8, 10, 12, 5, 7, 9, 11, 13)]
+
+## Add average exprs per group per gene
+exprs <- exprs[which(rownames(exprs) %in% merged$ENTREZID),]
+exprs <- exprs[order(match(rownames(exprs), merged$ENTREZID)),]
+
+p <- pdata[pdata$Condition=="Low risk",]
+e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
+merged$meanL <- e
+
+p <- pdata[pdata$Condition=="High risk",]
+e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
+merged$meanH <- e
+
+p <- pdata[pdata$Condition=="Control",]
+e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
+merged$meanC <- e
+
+p <- pdata[pdata$Condition=="Preeclampsia",]
+e <- rowMeans(exprs[,which(colnames(exprs) %in% rownames(p))])
+merged$meanP <- e
 
 ## Find the difference between logFCs
-merged$logFC.LC_LP <- merged$logFC.LC - merged$logFC.LP
-merged$logFC.LC_HC <- merged$logFC.LC - merged$logFC.HC
-merged$logFC.LC_HP <- merged$logFC.LC - merged$logFC.HP
-merged$logFC.LP_HC <- merged$logFC.LP - merged$logFC.HC
-merged$logFC.LP_HP <- merged$logFC.LP - merged$logFC.HP
-merged$logFC.HC_HP <- merged$logFC.HC - merged$logFC.HP
+merged$logFC.LC_LP <- round(merged$logFC.LC - merged$logFC.LP, 4)
+merged$logFC.LC_HC <- round(merged$logFC.LC - merged$logFC.HC, 4)
+merged$logFC.LC_HP <- round(merged$logFC.LC - merged$logFC.HP, 4)
+merged$logFC.LP_HP <- round(merged$logFC.LP - merged$logFC.HP, 4)
+merged$logFC.HC_HP <- round(merged$logFC.HC - merged$logFC.HP, 4)
 
+mm <- merged
+merged <- mm
 ## Filter alt
 tfs.big <- merged[which(merged$ENTREZID %in% TFs$ENTREZID),]
-ind <- which(apply(merged[, c(14:19)], MARGIN = 1, function(x) any(abs(x) > 1, na.rm = TRUE))==TRUE)
+ind <- which(apply(merged[, c(13:17)], MARGIN = 1, function(x) any(abs(x) > 1, na.rm = TRUE))==TRUE)
 merged.diff <- merged[ind,]
 merged <- merged[-ind,]
 
@@ -60,14 +84,15 @@ ind <- which(apply(merged[, c(4:7)], MARGIN = 1, function(x) all(abs(x) > 0, na.
 merged.na <- merged[-ind,]
 merged <- merged[ind,]
 
-ind <- which(apply(merged.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 0.7, na.rm = TRUE))==TRUE)
+ind <- which(apply(merged.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 1, na.rm = TRUE))==TRUE)
 merged.na <- merged.na[-ind,]
 
-merged <- merged[which(abs(merged$logFC.CP)>0.7),]
+merged <- merged[which(abs(merged$logFC.CP)>1),]
 
 total <- rbind(merged.diff, merged.na, merged)
 tfs <- total[which(total$ENTREZID %in% TFs$ENTREZID),]
-
+total$isTF <- total$ENTREZID %in% TFs$ENTREZID
+total <- total[,c(1:3, 18, 4:17)]
 ### Compare LC and HP
 
 # Find common genes for LC and HP

@@ -34,6 +34,8 @@ exl = which(pdata$QC=="Outlier")
 pdata <- pdata[-exl,]
 exprs <- exprs[,-exl]
 
+write.table(pdata, "../pdata/pdata.tsv", sep="\t", row.names = TRUE, quote=FALSE)
+
 ## Check PCA before batch correction
 if (TEST) {
   pca = prcomp(t(exprs))
@@ -96,6 +98,10 @@ save_plot("../plots/PCA/oslo_integrated_PCA_nobatch.svg",
 ### Getting probe to gene unique correspondence
 
 exprs.unique <- getUniqueProbesets(exprs.nobatch, studies[i,]$platformAbbr)
+if (TEST) {
+  write.table(exprs.unique, "../exprs/exprs_all.tsv", sep="\t", row.names = TRUE, quote=FALSE)
+}
+
 
 ## Check if probesets elimintation distorted PCA plot (didn't change much)
 if (TEST) {
