@@ -137,3 +137,9 @@ write.table(degs, "../degs/CP_degs.tsv", sep="\t", row.names = FALSE, quote=FALS
 degs <- filterDEGS(degs, 0.05, 0.7)
 write.table(degs, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
+
+# Comparison with old DEG
+degs.old <- read.table(paste("../degs/oslo_old_degs_short.tsv", sep=""),
+                        header=TRUE, check.names=FALSE, sep = "\t")
+ 
+common <- intersect(degs$SYMBOL, degs.old$SYMBOL)

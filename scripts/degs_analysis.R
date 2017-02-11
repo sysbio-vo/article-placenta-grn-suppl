@@ -93,6 +93,9 @@ total <- rbind(merged.diff, merged.na, merged)
 tfs <- total[which(total$ENTREZID %in% TFs$ENTREZID),]
 total$isTF <- total$ENTREZID %in% TFs$ENTREZID
 total <- total[,c(1:3, 18, 4:17)]
+
+write.table(total, "../degs/interesting_genes.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+
 ### Compare LC and HP
 
 # Find common genes for LC and HP
