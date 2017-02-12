@@ -3,4 +3,5 @@ raws/
 plots/
 exprs/
 docs/
+grn/
 *.Rhistory
