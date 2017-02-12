@@ -74,7 +74,7 @@ getUniqueProbesets <- function(exprs, platform) {
   return(exprs)
 }
 
-compareDEGs <- function(degsA, degsB, nameA, nameB) {
+compareDEGS <- function(degsA, degsB, nameA, nameB) {
   common <- intersect(degsA$SYMBOL, degsB$SYMBOL)
   inB <- degsA$SYMBOL %in% common
   inA <- degsB$SYMBOL %in% common
@@ -101,4 +101,23 @@ compareDEGs <- function(degsA, degsB, nameA, nameB) {
   colnames(degsB)[1:2] <- c(paste("diff", nameA, sep=""), paste("in", nameA, sep=""))
   
   return (list(degsA, degsB, c))
+}
+
+filterJointDEGS <- function(df, diff=1, cut=1.3, cp=1) {
+  ind <- which(apply(df[, c(13:17)], MARGIN = 1, function(x) any(abs(x) > diff, na.rm = TRUE))==TRUE)
+  df.diff <- df[ind,]
+  df <- df[-ind,]
+  
+  ind <- which(apply(df[, c(4:7)], MARGIN = 1, function(x) all(abs(x) > 0, na.rm = FALSE))==TRUE)
+  df.na <- df[-ind,]
+  df <- df[ind,]
+  
+  ind <- which(apply(df.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < cut, na.rm = TRUE))==TRUE)
+  df.na <- df.na[-ind,]
+  
+  df <- df[which(abs(df$logFC.CP)>cp),]
+  
+  df.total <- rbind(df.diff, df.na, df)
+  
+  return(df.total)  
 }

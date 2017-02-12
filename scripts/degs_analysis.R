@@ -75,26 +75,30 @@ merged$logFC.HC_HP <- round(merged$logFC.HC - merged$logFC.HP, 4)
 mm <- merged
 merged <- mm
 ## Filter alt
-tfs.big <- merged[which(merged$ENTREZID %in% TFs$ENTREZID),]
-ind <- which(apply(merged[, c(13:17)], MARGIN = 1, function(x) any(abs(x) > 1, na.rm = TRUE))==TRUE)
-merged.diff <- merged[ind,]
-merged <- merged[-ind,]
-
-ind <- which(apply(merged[, c(4:7)], MARGIN = 1, function(x) all(abs(x) > 0, na.rm = FALSE))==TRUE)
-merged.na <- merged[-ind,]
-merged <- merged[ind,]
-
-ind <- which(apply(merged.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < 1.3, na.rm = TRUE))==TRUE)
-merged.na <- merged.na[-ind,]
-
-merged <- merged[which(abs(merged$logFC.CP)>1),]
-
-total <- rbind(merged.diff, merged.na, merged)
+total <- filterJointDEGS(merged)
 tfs <- total[which(total$ENTREZID %in% TFs$ENTREZID),]
 total$isTF <- total$ENTREZID %in% TFs$ENTREZID
 total <- total[,c(1:3, 18, 4:17)]
-
 write.table(total, "../degs/interesting_genes.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+
+############### GRN
+total <- filterJointDEGS(merged, 0.7, 0.8, 0.7)
+total <- total[,c(1:4)]
+tfs <- as.character(total[which(total$ENTREZID %in% TFs$ENTREZID),]$SYMBOL)
+LC.degs <- read.table("../degs/LC_degs.tsv", sep="\t", quote = "", header=TRUE, check.names=FALSE)
+LC.degs <- LC.degs[which(LC.degs$ENTREZID %in% total$ENTREZID), ]
+LC.degs <- LC.degs[, -c(1,3:9)]
+
+HP.degs <- read.table("../degs/HP_degs.tsv", sep="\t", quote = "", header=TRUE, check.names=FALSE)
+HP.degs <- HP.degs[which(HP.degs$ENTREZID %in% total$ENTREZID), ]
+HP.degs <- HP.degs[, -c(1,3:9)]
+
+write.table(t(tfs), "../grn/regulators.txt", sep=" ", col.names=FALSE, row.names = FALSE, quote=FALSE)
+write.table(LC.degs, "../grn/norma.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+write.table(HP.degs, "../grn/disease.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+###############
+
+
 
 ### Compare LC and HP
 
