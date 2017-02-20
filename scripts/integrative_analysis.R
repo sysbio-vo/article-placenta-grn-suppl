@@ -115,6 +115,10 @@ if (TEST) {
 
 ### Differentially expressed genes
 
+# Low vs High
+degs <- getDEGS(c("Low risk", "High risk"), pdata, exprs.unique)
+write.table(degs, "../degs/LH_degs.tsv", sep="\t", row.names = FALSE, quote=FALSE)
+
 # High vs Preeclampsia
 degs <- getDEGS(c("High risk", "Preeclampsia"), pdata, exprs.unique)
 write.table(degs, "../degs/HP_degs.tsv", sep="\t", row.names = FALSE, quote=FALSE)
@@ -138,8 +142,23 @@ degs <- filterDEGS(degs, 0.05, 0.7)
 write.table(degs, paste("../degs/CP_degs_short.tsv", sep=""), sep="\t",
             row.names = FALSE, quote=FALSE)
 
-# Comparison with old DEG
+## Comparison with old DEG
+
+#CP
+degs <- read.table("../degs/CP_degs.tsv", sep="\t", quote = "",
+                   header=TRUE, check.names=FALSE)
+degs <- filterDEGS(degs, 0.05, 0.7)
 degs.old <- read.table(paste("../degs/oslo_old_degs_short.tsv", sep=""),
                         header=TRUE, check.names=FALSE, sep = "\t")
- 
 common <- intersect(degs$SYMBOL, degs.old$SYMBOL)
+
+#LH
+degs <- read.table("../degs/LH_degs.tsv", sep="\t", quote = "",
+                      header=TRUE, check.names=FALSE)
+degs <- filterDEGS(degs, 0.01, 0.7, adj=FALSE)
+degs.old <- read.table(paste("../degs/london_old_degs_short.tsv", sep=""),
+                       header=TRUE, check.names=FALSE, sep = "\t")
+degs.ind <- read.table(paste("../degs/london_degs_short.tsv", sep=""),
+                       header=TRUE, check.names=FALSE, sep = "\t")
+common <- intersect(degs$SYMBOL, degs.old$SYMBOL)
+common <- intersect(degs$SYMBOL, degs.ind$SYMBOL)

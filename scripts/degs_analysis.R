@@ -82,7 +82,7 @@ total <- total[,c(1:3, 18, 4:17)]
 write.table(total, "../degs/interesting_genes.tsv", sep="\t", row.names = FALSE, quote=FALSE)
 
 ############### GRN
-total <- filterJointDEGS(merged, 0.7, 0.8, 0.7)
+total <- filterJointDEGS(merged, 0.7, 0.8, 0.8)
 total <- total[,c(1:4)]
 tfs <- as.character(total[which(total$ENTREZID %in% TFs$ENTREZID),]$SYMBOL)
 LC.degs <- read.table("../degs/LC_degs.tsv", sep="\t", quote = "", header=TRUE, check.names=FALSE)
@@ -98,7 +98,12 @@ write.table(LC.degs, "../grn/norma.tsv", sep="\t", row.names = FALSE, quote=FALS
 write.table(HP.degs, "../grn/disease.tsv", sep="\t", row.names = FALSE, quote=FALSE)
 ###############
 
+### Check LH tfs
 
+LH.degs <- read.table("../degs/LH_degs.tsv", sep="\t", quote = "",
+                      header=TRUE, check.names=FALSE)
+LH.degs <- filterDEGS(LH.degs, 0.05, 0.7, adj=FALSE)
+tfs <- as.character(LH.degs[which(LH.degs$ENTREZID %in% TFs$ENTREZID),]$SYMBOL)
 
 ### Compare LC and HP
 
