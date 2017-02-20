@@ -113,11 +113,14 @@ filterJointDEGS <- function(df, diff=1, cut=1.3, cp=1) {
   df <- df[ind,]
   
   ind <- which(apply(df.na[, c(4:8)], MARGIN = 1, function(x) all(abs(x) < cut, na.rm = TRUE))==TRUE)
-  df.na <- df.na[-ind,]
+  df.na.cut <- df.na[-ind,]
+  df.na <- df.na[ind,]
   
+  df.na <- df.na[which(abs(df.na$logFC.CP)>cp),]
+    
   df <- df[which(abs(df$logFC.CP)>cp),]
   
-  df.total <- rbind(df.diff, df.na, df)
+  df.total <- rbind(df.diff, df.na.cut, df.na, df)
   
   return(df.total)  
 }
