@@ -65,7 +65,7 @@ dotplot.gsea <- function(df, font.size=12) {
 
   pl <- ggplot(df, aes_string(x=x, y="Description", size=size, color=colorBy)) +
     geom_point() + scale_color_gradient(low="red", high="blue") +
-    ylab("") + facet_grid(.~.sign + Group, scales="fixed") + theme_bw(base_size = 18) +
+    ylab("") + facet_grid(.~.sign + Group, scales="fixed") + theme_bw(base_size = font.size) +
     theme(axis.title.x=element_text(margin=margin(t=10)),
           axis.text.y = element_text(lineheight=0.75),
           panel.spacing.x = unit(5, "mm"))  
@@ -85,9 +85,9 @@ doGSEGO <- function(x, y, x.group="LC", y.group="HP", showCategory=20, by="Count
       df <- rbind(x.df, y.df)
       pl <- dotplot.gsea(df)
       save_plot(paste("../plots/FunctionalAnalysis/", x.group, y.group, "_gseGO_", i, "_", by, ".pdf", sep=""),
-                base_height=25, base_aspect_ratio=0.7, pl)
+                base_height=15, base_aspect_ratio=0.9, pl)
       save_plot(paste("../plots/FunctionalAnalysis/", x.group, y.group, "_gseGO_", i, "_", by, ".svg", sep=""),
-                base_height=25, base_aspect_ratio=0.7, pl)
+                base_height=15, base_aspect_ratio=0.9, pl)
     }
   }
 }

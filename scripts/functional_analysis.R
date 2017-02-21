@@ -36,7 +36,7 @@ hp.degs.gse <- HP.degs$logFC
 names(hp.degs.gse) <- HP.degs$ENTREZID
 hp.degs.gse <- hp.degs.gse[order(hp.degs.gse, decreasing = TRUE)]
 
-doGSEGO(lc.degs.gse, hp.degs.gse, by="GeneRatio", order=TRUE)
+doGSEGO(lc.degs.gse, hp.degs.gse, by="GeneRatio", order=TRUE, showCategory=15)
 
 ### EnrichGO
 
@@ -126,20 +126,20 @@ gc <- list(LC=as.character(LC.degs.filtered$ENTREZID), HP=as.character(HP.degs.f
 
 ## enrichPathway
 ck <- compareCluster(geneCluster = gc, fun = "enrichPathway")
-pl <- dotplot(ck, showCategory = 30) + theme_bw(base_size = 18) +
+pl <- dotplot(ck, showCategory = 30) + theme_bw(base_size = 14) +
       theme(axis.title.x=element_text(margin=margin(t=10)))
 
 save_plot("../plots/FunctionalAnalysis/LCHP_enrichPathway.pdf",
-          base_height=20, base_aspect_ratio=0.7, pl)
+          base_height=9, base_aspect_ratio=0.9, pl)
 save_plot("../plots/FunctionalAnalysis/LCHP_enrichPathway.svg",
-          base_height=20, base_aspect_ratio=0.7, pl)
+          base_height=9, base_aspect_ratio=0.9, pl)
 
 ## enrichGO
 ck <- compareCluster(geneCluster = gc, fun = "enrichGO", OrgDb = org.Hs.eg.db, ont = "CC")
-pl <- dotplot(ck, showCategory = 50) + theme_bw(base_size = 18) +
+pl <- dotplot(ck, showCategory = 50) + theme_bw(base_size = 14) +
   theme(axis.title.x=element_text(margin=margin(t=10)))
 
 save_plot("../plots/FunctionalAnalysis/LCHP_enrichGO_CC.pdf",
-          base_height=15, base_aspect_ratio=0.7, pl)
+          base_height=9, base_aspect_ratio=0.8, pl)
 save_plot("../plots/FunctionalAnalysis/LCHP_enrichGO_CC.svg",
-          base_height=15, base_aspect_ratio=0.7, pl)
+          base_height=9, base_aspect_ratio=0.8, pl)

@@ -2,7 +2,9 @@ library(GGally)
 library(network)
 library(sna)
 library(ggplot2)
-library( RColorBrewer)
+library(cowplot)
+library(RColorBrewer)
+source("degs_utils.R")
 
 ### Read bnf output
 disease <- read.table("../grn/disease.sif", sep="\t", quote = "", header=FALSE, check.names=FALSE)
@@ -66,11 +68,11 @@ set.edge.attribute(n, "color", ifelse(n %e% "common" == FALSE, "gray", "tomato")
 pl <- ggnet2(d, node.size = 16, color = "gray15", edge.color = "color", node.alpha = 0.7,
              label = TRUE, label.size = 3, label.color="group") +
       theme(panel.background = element_rect(fill = "grey15"))
-save_plot("../plots/GRN/disease.pdf",
-          base_height=7, base_aspect_ratio=1.3, pl)
+save_plot("../plots/GRN/disease.pdf", base_height=7, base_aspect_ratio=1.3, pl)
+save_plot("../plots/GRN/disease.svg", base_height=7, base_aspect_ratio=1.3, pl)
 
 pl <- ggnet2(n, node.size = 16, color = "gray15", edge.color = "color", node.alpha = 0.7,
              label = TRUE, label.size = 3, label.color="color") +
       theme(panel.background = element_rect(fill = "grey15"))
-save_plot("../plots/GRN/norma.pdf",
-          base_height=7, base_aspect_ratio=1.3, pl)
+save_plot("../plots/GRN/norma.pdf", base_height=7, base_aspect_ratio=1.3, pl)
+save_plot("../plots/GRN/norma.svg", base_height=7, base_aspect_ratio=1.3, pl)
