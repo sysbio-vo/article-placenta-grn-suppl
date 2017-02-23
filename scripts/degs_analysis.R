@@ -1,7 +1,8 @@
 source("degs_utils.R")
 source("plots_utils.R")
 library(cowplot)
-
+library(illuminaHumanv3.db)
+library(psych)
 
 ### Reading DEG lists
 LC.degs <- read.table("../degs/LC_degs.tsv", sep="\t", quote = "",
@@ -149,3 +150,12 @@ save_plot("../plots/FunctionalAnalysis/LCLP_heatmap.pdf",
           base_height=14, base_aspect_ratio=0.57, pl)
 save_plot("../plots/FunctionalAnalysis/LCLP_heatmap.svg",
           base_height=14, base_aspect_ratio=0.57, pl)
+
+### Barplot for particular gene
+exprs <- read.table("../exprs/exprs_all.tsv", sep="\t", quote = "", header=TRUE, check.names=FALSE)
+pdata  <- read.table("../pdata/pdata.tsv", sep="\t", quote = "", header=TRUE, check.names=FALSE)
+
+symbol = "FLT1"
+pl <- geneBarPlot(exprs, pdata, symbol)
+save_plot(paste("../plots/GenesBP/", symbol, ".pdf", sep=""),
+          base_height=5, base_aspect_ratio=1.5, pl)
