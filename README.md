@@ -1,2 +1,2 @@
-# placenta-data-reuse
-Integrative re-analysis of placenta microarray datasets
+# article-placenta-grn-suppl
+Integrative analysis of Human placenta gene expression profiles
