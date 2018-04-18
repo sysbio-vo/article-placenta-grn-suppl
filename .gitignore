@@ -5,3 +5,5 @@ exprs/
 docs/
 grn/
 *.Rhistory
+*.Rdata
+*untracked*
