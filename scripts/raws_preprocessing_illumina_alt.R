@@ -1,4 +1,5 @@
 library(beadarray)
+library(sva)
 library(limma)
 source("plots_utils.R")
 
@@ -91,3 +92,45 @@ degs <- getDEGS(c("Normal RI", "High RI"), pdata, exprs.unique)
 degs <- filterDEGS(degs, 0.05, 0.5, adj=FALSE)
 
 mmdegs <- degs
+
+i = which(studies$ID=="pittsburgh")
+pdata.pitt <- read.table(paste("../pdata/", studies[i,]$ID, "_pdata_untracked.tsv", sep=""), 
+                         sep="\t", head=TRUE, stringsAsFactors = FALSE)
+exprs.pitt <- read.table(paste("../exprs/", studies[i,]$ID, "_exprs.tsv", sep=""),
+                         header=TRUE, check.names=FALSE)
+
+probesetsID_EntrezID<-select(hgu133plus2hsentrezg.db, rownames(exprs.pitt), "ENTREZID")
+probesetsID_EntrezID <- probesetsID_EntrezID[which(probesetsID_EntrezID$ENTREZID!="NA"),]
+n_occur <- data.frame(table(probesetsID_EntrezID$PROBEID))
+uniques <- n_occur[n_occur$Freq == 1,]$Var1
+probesetsID_EntrezID <- probesetsID_EntrezID[which(probesetsID_EntrezID$PROBEID %in% uniques),]
+
+exprs.pitt <- exprs.pitt[which(rownames(exprs.pitt) %in% probesetsID_EntrezID$PROBEID),]
+rownames(exprs.pitt) <- probesetsID_EntrezID[match(rownames(exprs.pitt), probesetsID_EntrezID$PROBEID),]$ENTREZID
+
+
+exprs.pitt <- exprs.pitt[which(rownames(exprs.pitt) %in% rownames(exprs.unique)),]
+exprs.unique <- exprs.unique[which(rownames(exprs.unique) %in% rownames(exprs.pitt)),]
+exprs.unique <- exprs.unique[order(match(rownames(exprs.unique), rownames(exprs.pitt))),]
+exprs.all <- cbind(exprs.unique, exprs.pitt)
+
+pd <- pdata[,c("ConditionSimple", "Sample_Name", "StudyID")]
+colnames(pd) <- c("Condition", "SampleID", "StudyID")
+pdpit <- pdata.pitt[, c("Condition", "SampleID", "StudyID")]
+
+pd.all <- rbind(pd, pdpit)
+exprs.all <- exprs.all[,pd.all$SampleID]
+
+batch = as.factor(pd.all$StudyID)
+mod = model.matrix(~as.factor(Condition), data=pd.all)
+combat_edata = ComBat(dat=exprs.all, batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
+exprs.nobatch <- combat_edata
+
+pca = prcomp(t(exprs.nobatch))
+pl <- autoplot(pca, data = pd.all, colour="StudyID") +
+  scale_color_manual(values=c("red", "blue", "green", "black", "yellow", "pink", "brown"))
+
+rownames(pd.all) <- pd.all$SampleID
+degs <- getDEGS(c("Norma", "Preeclampsia"), pd.all, exprs.nobatch)
+
+degs <- filterDEGS(degs, 0.05, 0.5)
