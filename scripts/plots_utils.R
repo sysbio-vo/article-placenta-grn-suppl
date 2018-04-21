@@ -50,6 +50,18 @@ pcaPlots <- function(pca.data, pheno.data, meta.vars, title, ncol) {
   return(list(pl, ar))
 }
 
+illuPRatio <- function(df) {
+  df$Ratio <- df$P95Grn / df$P05Grn
+  hl <- df %>% group_by(Matrix) %>% summarize_at(vars(Ratio), mean)
+  
+  pl <- ggplot(df, aes(x=Section, y=Ratio)) + 
+        geom_dotplot(binaxis='y') + ylab("P95 / P05") +
+        geom_hline(aes(yintercept = Ratio), data=hl, linetype = "dashed", color='steelblue') +
+        facet_grid(. ~ Matrix)
+  
+  return(pl)
+}
+
 genesHeatmap <- function(df, nameA, nameB) {
   rownames(df) <- df$SYMBOL
   m <- melt(df, id.vars="SYMBOL")

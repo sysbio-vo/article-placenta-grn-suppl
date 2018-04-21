@@ -3,6 +3,7 @@ library(ggfortify)
 library(beadarray)
 library(arrayQualityMetrics)
 library(sva)
+library(dplyr)
 source("plots_utils.R")
 
 ### General variables
@@ -10,125 +11,131 @@ source("plots_utils.R")
 studies <- read.table("../pdata/studies.tsv", header = TRUE, sep = "\t")
 
 ## Choose between cohorts
-#i = which(studies$ID=="london")
-i = which(studies$ID=="oslo")
+i = which(studies$ID=="london")
+#i = which(studies$ID=="oslo")
 
+### Read data
 path = paste("../raws/", studies[i,]$ID, sep="")
 pdata = read.table(paste("../pdata/", studies[i,]$ID, "_pdata_untracked.tsv", sep=""), 
                    sep="\t", head=TRUE, stringsAsFactors = FALSE)
-idatfiles = dir(path, pattern="idat", full.name=TRUE)
+raw.data <- readIllumina(dir=path, sampleSheet=paste("../pdata/", studies[i,]$ID, "_pdata_untracked.csv", sep=""),
+                     illuminaAnnotation="Humanv3")
 
-### Read and normalize the data
+### Normalize and QC
 
-raw.data <- readIdatFiles(idatfiles)
-raw.data@phenoData = AnnotatedDataFrame(pdata)
-N.data <- normaliseIllumina(channel(raw.data, "Green"), method="neqc", transform="none")
-
-### Processing
-
-## Batch-effect removal
-batch = as.factor(pData(N.data)$SentrixID)
-mod = model.matrix(~as.factor(Condition), data=pData(N.data))
-combat_edata = ComBat(dat=exprs(N.data), batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
-N.data.nobatch <- N.data
-N.data.nobatch@assayData$exprs <- combat_edata
-
-## Extract expression data
-N.exprs <- exprs(N.data)
-N.exprs.nobatch <- exprs(N.data.nobatch)
-
-## In London cohort we have samples from Oslo, exclude them to plot PCA properly
-if (studies[i,]$ID=="london") {
-  exl = which(pdata$Trimester=="Third")
-  pdata <- pdata[-exl,]
-  N.exprs <- N.exprs[,-exl]
-  N.exprs.nobatch <- N.exprs.nobatch[,-exl]
+## P95 and P05 scores ratio
+sID <- as.factor(pdata$Sentrix_ID)
+ht12metrics <- c()
+for (id in levels(sID)) {
+  ht12metrics <- rbind(ht12metrics, read.table(paste(path, "/", id, "/Metrics.txt", sep=""),
+                            sep = "\t", header = TRUE, as.is = TRUE))
 }
 
-## Perform PCA and create plots
-pca = prcomp(t(N.exprs))
-pca.nobatch = prcomp(t(N.exprs.nobatch))
-pl <- pcaPlots(pca, pdata, c("Condition", "SentrixID"))
-pl.nobatch <- pcaPlots(pca.nobatch, pdata, c("Condition", "SentrixID"))
+pl <- illuPRatio(ht12metrics)
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PRatio.pdf", sep=""),
+          base_height=3, base_aspect_ratio = 2.5, pl, ncol=1)
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PRatio.svg", sep=""),
+          base_height=3, base_aspect_ratio = 2.5, pl, ncol=1)
+
+## Array image plot
+#imageplot(raw.data, array=16,high="white",low="darkgreen",zlim=c(4,10))
+#combinedControlPlot(raw.data,array=1)
+
+## Summarization and mormalization 
+eset.sum <- beadarray::summarize(raw.data)
+boxplot(exprs(eset.sum),outline=FALSE)
+eset.norm <- normaliseIllumina(eset.sum)
+boxplot(exprs(eset.norm),outline=FALSE)
+
+exprs <- exprs(eset.norm)
+if (studies[i,]$ID=="london") {
+  third = which(pdata$Trimester!="Third")
+} else {
+  third = c(1:nrow(pdata))
+}
+
+eset = ExpressionSet(assayData=exprs[,third],
+                     phenoData = AnnotatedDataFrame(pdata[third,]))
+
+arrayQualityMetrics(expressionset = eset,
+                    outdir = paste("../plots/QC/", studies[i,]$ID,"/AQM_report_", studies[i,]$ID, sep=""),
+                    force = TRUE,
+                    do.logtransform = FALSE,
+                    intgroup = c("Condition"))
+
+exprs[which(is.na(exprs))] <- 0
+#which(is.na(exprs), arr.ind = T)
+pca = prcomp(t(exprs[,third]))
+pl <- pcaPlots(pca, pdata[third,], c("Condition", "Sentrix_ID"))
 
 ## Save plot for manual quality control
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA.pdf", sep=""),
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA.pdf", sep=""),
           base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA.svg", sep=""),
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA.svg", sep=""),
           base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
 
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA_nobatch.pdf", sep=""),
-          base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]])
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA_nobatch.svg", sep=""),
-          base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]])
-
-### Manual QC step
-
-## Check the plots and decide if the batch correction is necessary
-## Proceed with outlier detection
-
-### arrayQualityMetrics report
-
-## We use only one dataset, original or nobatch, decided during manual step
-eset = ExpressionSet(assayData=N.exprs.nobatch, phenoData = AnnotatedDataFrame(pdata))
-arrayQualityMetrics(expressionset = eset,
-                   outdir = paste("../plots/QC/AQM_report_nobatch_", studies[i,]$ID, sep=""),
-                   force = TRUE,
-                   do.logtransform = FALSE,
-                   intgroup = c("Condition"))
-
-eset = ExpressionSet(assayData=N.exprs, phenoData = AnnotatedDataFrame(pdata))
-arrayQualityMetrics(expressionset = eset,
-                    outdir = paste("../plots/QC/AQM_report_", studies[i,]$ID, sep=""),
-                    force = TRUE,
-                    do.logtransform = FALSE,
-                    intgroup = c("Condition"))
-
-### Manual outlier detection step
-## Read AQM report and decide, which samples should be excluded, edit pdata file
-
-### arrayQualityMetrics report without outliers
+## Remove outliers
 exl = which(pdata$QC=="Outlier")
 pdata <- pdata[-exl,]
-N.exprs.nobatch <- N.exprs.nobatch[,-exl]
-N.exprs <- N.exprs[,-exl]
-eset = ExpressionSet(assayData=N.exprs, phenoData = AnnotatedDataFrame(pdata))
+exprs <- exprs[,-exl]
+if (studies[i,]$ID=="london") {
+  third = which(pdata$Trimester!="Third")
+} else {
+  third = c(1:nrow(pdata))
+}
+
+eset = ExpressionSet(assayData=exprs[,third],
+                     phenoData = AnnotatedDataFrame(pdata[third,]))
 arrayQualityMetrics(expressionset = eset,
-                    outdir = paste("../plots/QC/AQM_report_nooutliers_", studies[i,]$ID, sep=""),
+                    outdir = paste("../plots/QC/", studies[i,]$ID,"/AQM_report_", studies[i,]$ID, "_nooutliers", sep=""),
                     force = TRUE,
                     do.logtransform = FALSE,
                     intgroup = c("Condition"))
 
-eset = ExpressionSet(assayData=N.exprs.nobatch, phenoData = AnnotatedDataFrame(pdata))
+
+### Batch-effect removal
+
+if (studies[i,]$ID=="london") {
+  batch = as.factor(pdata$Batch)
+} else {
+  batch = as.factor(pdata$Sentrix_ID)
+}
+mod = model.matrix(~as.factor(Condition), data=pdata)
+exprs.nobatch = ComBat(dat=exprs, batch=batch, mod=mod, par.prior=TRUE, prior.plots=FALSE)
+
+## Perform PCA and create plots
+pca = prcomp(t(exprs[,third]))
+pca.nobatch = prcomp(t(exprs.nobatch[,third]))
+pl <- pcaPlots(pca, pdata[third,], c("Condition", "Sentrix_ID"))
+pl.nobatch <- pcaPlots(pca.nobatch, pdata[third,], c("Condition", "Sentrix_ID"))
+
+## Save plot for manual quality control
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA_nooutliers.pdf", sep=""),
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA_nooutliers.svg", sep=""),
+          base_height=3, base_aspect_ratio = pl[[2]], pl[[1]])
+
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA_nooutliers_nobatch.pdf", sep=""),
+          base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]])
+save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA_nooutliers_nobatch.svg", sep=""),
+          base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]])
+
+if (studies[i,]$ID=="oslo") {
+  pca.nobatch = prcomp(t(exprs.nobatch[,third]))
+  pl.nobatch <- pcaPlots(pca.nobatch, pdata[third,], c("Condition", "ConditionDetailed", "Onset", "acogPE"), ncol=2)
+  save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA_nooutliers_nobatch_cond.pdf", sep=""),
+            base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]], nrow=2)
+  save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PCA_nooutliers_nobatch_cond.svg", sep=""),
+            base_height=3, base_aspect_ratio = pl.nobatch[[2]], pl.nobatch[[1]], nrow=2)
+}
+
+eset = ExpressionSet(assayData=exprs.nobatch[,third],
+                     phenoData = AnnotatedDataFrame(pdata[third,]))
 arrayQualityMetrics(expressionset = eset,
-                    outdir = paste("../plots/QC/AQM_report_nobatch_nooutliers_", studies[i,]$ID, sep=""),
+                    outdir = paste("../plots/QC/", studies[i,]$ID,"/AQM_report_", studies[i,]$ID, "_nooutliers_nobatch", sep=""),
                     force = TRUE,
                     do.logtransform = FALSE,
                     intgroup = c("Condition"))
 
-## PCA plot without batch and outliers
-pca.final = prcomp(t(N.exprs.nobatch))
-
-# Percentage of variance
-#summary(pca.final)
-#100*pca.final$sdev^2/sum(pca.final$sdev^2)
-
-pl.final <- pcaPlots(pca.final, pdata, c("Condition", "SentrixID"))
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA_nobatch_nooutliers.pdf", sep=""),
-          base_height=3, base_aspect_ratio = pl.final[[2]], pl.final[[1]])
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA_nobatch_nooutliers.svg", sep=""),
-          base_height=3, base_aspect_ratio = pl.final[[2]], pl.final[[1]])
-
-## PCA plot with batch but no outliers
-pca.final.batch = prcomp(t(N.exprs))
-pl.final.batch <- pcaPlots(pca.final.batch, pdata, c("Condition", "SentrixID"))
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA_nooutliers.pdf", sep=""),
-          base_height=3, base_aspect_ratio = pl.final.batch[[2]], pl.final.batch[[1]])
-save_plot(paste("../plots/QC/", studies[i,]$ID, "_PCA_nooutliers.svg", sep=""),
-          base_height=3, base_aspect_ratio = pl.final.batch[[2]], pl.final.batch[[1]])
-
-### If the result is satisfying save the expression data for futher analysis
-
-## Save all the data, e.g. with outliers, just in case, the main idea is to add the info to pdata during manual steps
-N.exprs.nobatch <- exprs(N.data.nobatch)
-write.table(N.exprs.nobatch, paste("../exprs/", studies[i,]$ID, "_exprs.tsv", sep=""), sep="\t", quote=FALSE)
+### Save all the data (without outliers)
+write.table(exprs.nobatch, paste("../exprs/", studies[i,]$ID, "_exprs.tsv", sep=""), sep="\t", quote=FALSE)
