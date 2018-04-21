@@ -33,6 +33,7 @@ eset = rma(affyData)
 ### Processing
 
 exprs <- exprs(eset)
+colnames(exprs) <- pdata$SampleID
 
 ## Perform PCA and create plots
 pca = prcomp(t(exprs))
