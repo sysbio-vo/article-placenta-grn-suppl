@@ -42,9 +42,13 @@ save_plot(paste("../plots/QC/", studies[i,]$ID, "/", studies[i,]$ID, "_PRatio.sv
 #combinedControlPlot(raw.data,array=1)
 
 ## Summarization and mormalization 
-eset.sum <- beadarray::summarize(raw.data)
+myMean = function(x) mean(x,na.rm=TRUE)
+mySd = function(x) sd(x,na.rm=TRUE)
+greenChannel = new("illuminaChannel", greenChannelTransform, illuminaOutlierMethod, myMean, mySd,"G")
+
+eset.sum <- beadarray::summarize(raw.data, channelList = list(greenChannel))
 boxplot(exprs(eset.sum),outline=FALSE)
-eset.norm <- normaliseIllumina(eset.sum)
+eset.norm <- normaliseIllumina(eset.sum, method="neqc", transform="none")
 boxplot(exprs(eset.norm),outline=FALSE)
 
 exprs <- exprs(eset.norm)
@@ -54,6 +58,8 @@ if (studies[i,]$ID=="london") {
   third = c(1:nrow(pdata))
 }
 
+#save(list=c("exprs", "pdata"), file="out")
+#load("out")
 eset = ExpressionSet(assayData=exprs[,third],
                      phenoData = AnnotatedDataFrame(pdata[third,]))
 
@@ -63,7 +69,7 @@ arrayQualityMetrics(expressionset = eset,
                     do.logtransform = FALSE,
                     intgroup = c("Condition"))
 
-exprs[which(is.na(exprs))] <- 0
+exprs[which(is.na(exprs))] <- min(exprs[!is.na(exprs)])
 #which(is.na(exprs), arr.ind = T)
 pca = prcomp(t(exprs[,third]))
 pl <- pcaPlots(pca, pdata[third,], c("Condition", "Sentrix_ID"))

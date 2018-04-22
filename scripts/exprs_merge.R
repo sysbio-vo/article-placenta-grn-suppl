@@ -90,8 +90,6 @@ save_plot("../plots/Merge/LO_oslo_integrated_PCA_nobatch.svg",
 ### Getting probe to gene unique correspondence
 
 exprs.unique <- getUniqueProbesets(exprs.nobatch, studies[1,]$platformAbbr)
-#write.table(exprs.unique, "../exprs/exprs_all.tsv", sep="\t", row.names = TRUE, quote=FALSE)
-
 
 ## Check if probesets elimintation distorted PCA plot (didn't change much)
 pca = prcomp(t(exprs.unique))
